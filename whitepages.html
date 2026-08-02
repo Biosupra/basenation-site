@@ -33,12 +33,11 @@
     /* ASCII Dinosaur Style */
     .dino-visual {
       color: var(--base-blue);
-      font-family: monospace; /* Essential for ASCII alignment */
-      font-size: 14px;
+      font-family: monospace;
+      font-size: 18px;
       line-height: 1.2;
-      margin-bottom: 30px;
-      white-space: pre; /* Prevents text from wrapping awkwardly */
-      overflow-x: auto; /* Adds scrollbar on mobile if needed */
+      margin: 0 auto 30px auto; 
+      font-weight: bold;
     }
 
     /* Bold, Fun Text Style */
@@ -76,19 +75,14 @@
   <div class="construction-container">
       
     <!-- ASCII Dinosaur Visual -->
-    <div class="dino-visual">
-               ______
-             _/      \
-            / o    ___\
-           |      /
-    _______/_____/____
-    /                  \
-   /    /\_____/\    /  \
-  /    /         \  /    \
- (_____)         (_____)
-  |   |           |   |
-  |___|           |___|
-    </div>
+    <pre class="dino-visual">
+               __
+              / _)
+     _/\/\/\_/ /
+   _|         /
+ _|  (  | (  |
+/__.-'|_|--|_|
+    </pre>
 
     <p class="fun-text">Working on it, we promise!</p>
     <p class="sub-text">The detailed technical documentation is currently under heavy development. Stay tuned.</p>
