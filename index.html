@@ -4,13 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- Base Verification Meta Tag -->
     <meta name="base:app_id" content="6a5b292578da0c9886635aed" />
     
-    <!-- TalentApp Verification Meta Tag -->
     <meta name="talentapp:project_verification" content="9590ac9d78c5470f9c93680a677d3a33107fc4b1f0f5367de52bfccb6a8fab7f7cfc5cd9eac24a82dad03ff9506f6446256a12094fc04dc47f4b0c8c13e4230b">
     
     <title>Basenation | The Foundation</title>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+
     <style>
         /* Modern CSS Variables for easy editing */
         :root {
@@ -87,8 +88,8 @@
 
         /* Hero Section */
         header {
-            padding-top: 10vh;
-            margin-bottom: 4rem;
+            padding-top: 5vh;
+            margin-bottom: 3rem;
         }
 
         h1 {
@@ -108,12 +109,72 @@
             margin: 0 auto;
         }
 
+        /* --- New Vault UI Styles --- */
+        .vault-container {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 2rem;
+            max-width: 500px;
+            margin: 0 auto 3rem auto;
+            text-align: left;
+        }
+        
+        .vault-input {
+            width: 95%;
+            padding: 12px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border: 1px solid #333;
+            background: #1A1C20;
+            color: white;
+            font-size: 16px;
+        }
+
+        .vault-btn {
+            width: 100%;
+            padding: 15px;
+            background-color: var(--base-blue);
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+        }
+
+        .vault-btn:hover {
+            filter: brightness(1.1);
+        }
+
+        .risk-selector {
+            display: flex;
+            gap: 10px;
+            margin: 10px 0;
+        }
+
+        .risk-btn {
+            flex: 1;
+            padding: 10px;
+            background: #1A1C20;
+            border: 1px solid #333;
+            color: var(--text-muted);
+            cursor: pointer;
+            border-radius: 6px;
+        }
+
+        .risk-btn.active {
+            background: rgba(0, 82, 255, 0.2);
+            border-color: var(--base-blue);
+            color: var(--text-main);
+        }
+
         /* Information Grid */
         .features {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
             gap: 2rem;
-            margin-top: 4rem;
             text-align: left;
         }
 
@@ -132,7 +193,6 @@
 </head>
 <body>
 
-    <!-- Dropdown Menu -->
     <nav class="dropdown">
         <button class="dropbtn">Menu</button>
         <div class="dropdown-content">
@@ -148,6 +208,31 @@
             <p class="subtitle">The hub is currently under construction. A new platform for the ecosystem is deploying soon.</p>
         </header>
 
+        <section class="vault-container">
+            <h2 style="text-align: center; margin-top: 0;">Automated Liquidity Manager</h2>
+            
+            <div id="connect-section">
+                <p style="text-align: center; color: var(--text-muted); font-size: 14px;">Connect your Web3 Wallet to deposit into the ALM Vault.</p>
+                <button class="vault-btn" id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+            </div>
+
+            <div id="deposit-section" style="display: none;">
+                <p id="wallet-address-display" style="color: var(--base-blue); font-size: 14px; text-align: center;"></p>
+                
+                <label style="font-weight: bold;">Total Deposit (USD)</label>
+                <input type="number" id="usd-amount" class="vault-input" placeholder="e.g. 100">
+                <p style="font-size: 12px; color: var(--text-muted); margin-top: -5px;">Deposit will be auto-split 50/50 between WETH and USDC.</p>
+
+                <label style="font-weight: bold; display: block; margin-top: 15px;">AI Bot Risk Parameters</label>
+                <div class="risk-selector">
+                    <button class="risk-btn active" id="btn-low-risk" onclick="setRisk('low')">Low Risk (+/- 1.5%)</button>
+                    <button class="risk-btn" id="btn-high-risk" onclick="setRisk('high')">High Risk (+/- 1.0%)</button>
+                </div>
+
+                <button class="vault-btn" id="deposit-btn" onclick="executeDeposit()">Deposit & Stake in Vault</button>
+            </div>
+        </section>
+
         <section class="features">
             <div class="feature-card">
                 <h3>About Us</h3>
@@ -157,11 +242,122 @@
             <div class="feature-card">
                 <h3>Next Steps</h3>
                 <p>Please Stay Tuned (b20 Token drop ( To Be announced ) ) Usdc / Base Nation Token Staking For Apy of Custom built Liquidity bot managers ( To Be Announced ) check out our X Account 
-                   <a href="https://x.com/Base__Nation?s=20" target="_blank" style="color: var(--base-blue); text-decoration: underline;">https://x.com/Base__Nation?s=20</a>
+                   <a href="https://x.com/Base__Nation?s=20" target="_blank" style="color: var(--base-blue); text-decoration: underline;">https://x.com/Base__Nation</a>
                 </p>
             </div>
         </section>
     </div>
 
+    <script>
+        // Smart Contract Configuration
+        const VAULT_ADDRESS = "0xYourDeployedVaultAddressHere"; // Replace when deployed
+        const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
+        const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+        
+        const VAULT_ABI = [
+            "function depositAndStake(address token0, address token1, uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)"
+        ];
+
+        let userSigner = null;
+        let selectedRisk = 'low';
+
+        // UI Logic for Risk Buttons
+        function setRisk(level) {
+            selectedRisk = level;
+            document.getElementById('btn-low-risk').classList.remove('active');
+            document.getElementById('btn-high-risk').classList.remove('active');
+            document.getElementById('btn-' + level + '-risk').classList.add('active');
+        }
+
+        // Web3 Connection Logic
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    // Requests the wallet to connect
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await provider.send("eth_requestAccounts", []);
+                    userSigner = await provider.getSigner();
+                    
+                    const address = accounts[0];
+                    
+                    // Switch UI
+                    document.getElementById('connect-section').style.display = 'none';
+                    document.getElementById('deposit-section').style.display = 'block';
+                    document.getElementById('wallet-address-display').innerText = 
+                        "Connected: " + address.substring(0, 6) + "..." + address.substring(address.length - 4);
+                        
+                } catch (error) {
+                    console.error("User rejected request", error);
+                    alert("Connection failed. Please approve the prompt in your wallet.");
+                }
+            } else {
+                alert("No Web3 wallet detected! Please install Coinbase Wallet or MetaMask.");
+            }
+        }
+
+        // Execution Logic for the Smart Contract
+        async function executeDeposit() {
+            if (!userSigner) return alert("Please connect your wallet first.");
+            
+            const usdInput = document.getElementById('usd-amount').value;
+            if (!usdInput || usdInput <= 0) return alert("Please enter a valid deposit amount.");
+
+            const btn = document.getElementById('deposit-btn');
+            btn.innerText = "Confirming in Wallet...";
+            btn.disabled = true;
+
+            try {
+                // 1. Setup the Smart Contract connection
+                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
+
+                // 2. Mock calculations for the 50/50 split based on user USD input.
+                // In production, we will hook this up to the live WETH price.
+                const amountWeth = ethers.parseUnits("0.015", 18); // Mock values for testing
+                const amountUsdc = ethers.parseUnits("50", 6);     // Mock values for testing
+
+                const amountWethMin = (amountWeth * 99n) / 100n; // 1% Slippage Protection
+                const amountUsdcMin = (amountUsdc * 99n) / 100n;
+
+                // 3. Tick Math based on selected risk
+                const currentTick = -199340; // Mock current tick of pool
+                const tickSpacing = 200;
+                let tickLower, tickUpper;
+
+                if (selectedRisk === 'high') {
+                    tickLower = currentTick - 200;
+                    tickUpper = currentTick + 200;
+                } else {
+                    tickLower = currentTick - 400;
+                    tickUpper = currentTick + 400;
+                }
+
+                // 4. Send the Transaction
+                const tx = await vaultContract.depositAndStake(
+                    WETH_ADDRESS,
+                    USDC_ADDRESS,
+                    amountWeth,
+                    amountUsdc,
+                    amountWethMin,
+                    amountUsdcMin,
+                    tickSpacing,
+                    tickLower,
+                    tickUpper
+                );
+
+                btn.innerText = "Waiting for Blockchain...";
+                await tx.wait(); // Wait for it to confirm on Base
+
+                alert("Successfully Deposited and Staked into the Vault!");
+                btn.innerText = "Deposit & Stake in Vault";
+                btn.disabled = false;
+
+            } catch (error) {
+                console.error(error);
+                alert("Transaction Failed. Check console for details.");
+                btn.innerText = "Deposit & Stake in Vault";
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>
