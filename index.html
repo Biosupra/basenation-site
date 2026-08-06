@@ -123,7 +123,7 @@
         .vault-input {
             width: 95%;
             padding: 12px;
-            margin: 10px 0;
+            margin: 5px 0 15px 0;
             border-radius: 6px;
             border: 1px solid #333;
             background: #1A1C20;
@@ -146,6 +146,11 @@
 
         .vault-btn:hover {
             filter: brightness(1.1);
+        }
+        
+        .vault-btn:disabled {
+            background-color: #555;
+            cursor: not-allowed;
         }
 
         .risk-selector {
@@ -217,13 +222,17 @@
             </div>
 
             <div id="deposit-section" style="display: none;">
-                <p id="wallet-address-display" style="color: var(--base-blue); font-size: 14px; text-align: center;"></p>
+                <p id="wallet-address-display" style="color: var(--base-blue); font-size: 14px; text-align: center; margin-bottom: 20px; font-weight: bold;"></p>
                 
-                <label style="font-weight: bold;">Total Deposit (USD)</label>
-                <input type="number" id="usd-amount" class="vault-input" placeholder="e.g. 100">
-                <p style="font-size: 12px; color: var(--text-muted); margin-top: -5px;">Deposit will be auto-split 50/50 between WETH and USDC.</p>
+                <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Vault deposits require an equal value balance of WETH and USDC.</p>
 
-                <label style="font-weight: bold; display: block; margin-top: 15px;">AI Bot Risk Parameters</label>
+                <label style="font-weight: bold;">WETH Amount</label>
+                <input type="number" id="weth-amount" class="vault-input" placeholder="0.00" step="0.0001">
+                
+                <label style="font-weight: bold;">USDC Amount</label>
+                <input type="number" id="usdc-amount" class="vault-input" placeholder="0.00" step="0.01">
+
+                <label style="font-weight: bold; display: block; margin-top: 10px;">AI Bot Risk Parameters</label>
                 <div class="risk-selector">
                     <button class="risk-btn active" id="btn-low-risk" onclick="setRisk('low')">Low Risk (+/- 1.5%)</button>
                     <button class="risk-btn" id="btn-high-risk" onclick="setRisk('high')">High Risk (+/- 1.0%)</button>
@@ -249,10 +258,15 @@
     </div>
 
     <script>
-        // Smart Contract Configuration
-        const VAULT_ADDRESS = "0xYourDeployedVaultAddressHere"; // Replace when deployed
+        // LIVE Smart Contract Configuration
+        const VAULT_ADDRESS = "0xD63C0c90b6C0140cE57ba4ccDb2EB93DE7c9784E";
         const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+        
+        // ABIs for interactions
+        const ERC20_ABI = [
+            "function approve(address spender, uint256 amount) public returns (bool)"
+        ];
         
         const VAULT_ABI = [
             "function depositAndStake(address token0, address token1, uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)"
@@ -273,14 +287,12 @@
         async function connectWallet() {
             if (typeof window.ethereum !== 'undefined') {
                 try {
-                    // Requests the wallet to connect
                     const provider = new ethers.BrowserProvider(window.ethereum);
                     const accounts = await provider.send("eth_requestAccounts", []);
                     userSigner = await provider.getSigner();
                     
                     const address = accounts[0];
                     
-                    // Switch UI
                     document.getElementById('connect-section').style.display = 'none';
                     document.getElementById('deposit-section').style.display = 'block';
                     document.getElementById('wallet-address-display').innerText = 
@@ -299,27 +311,40 @@
         async function executeDeposit() {
             if (!userSigner) return alert("Please connect your wallet first.");
             
-            const usdInput = document.getElementById('usd-amount').value;
-            if (!usdInput || usdInput <= 0) return alert("Please enter a valid deposit amount.");
+            const wethInput = document.getElementById('weth-amount').value;
+            const usdcInput = document.getElementById('usdc-amount').value;
+            
+            if (!wethInput || wethInput <= 0 || !usdcInput || usdcInput <= 0) {
+                return alert("Please enter valid amounts for both WETH and USDC.");
+            }
 
             const btn = document.getElementById('deposit-btn');
-            btn.innerText = "Confirming in Wallet...";
             btn.disabled = true;
 
             try {
-                // 1. Setup the Smart Contract connection
+                // 1. Setup the Contract connections
+                const wethContract = new ethers.Contract(WETH_ADDRESS, ERC20_ABI, userSigner);
+                const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, userSigner);
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
 
-                // 2. Mock calculations for the 50/50 split based on user USD input.
-                // In production, we will hook this up to the live WETH price.
-                const amountWeth = ethers.parseUnits("0.015", 18); // Mock values for testing
-                const amountUsdc = ethers.parseUnits("50", 6);     // Mock values for testing
+                // 2. Parse exact user inputs into Wei based on token decimals
+                const amountWeth = ethers.parseUnits(wethInput.toString(), 18);
+                const amountUsdc = ethers.parseUnits(usdcInput.toString(), 6);
 
+                // 3. Request Token Approvals
+                btn.innerText = "Approving WETH (1/3)...";
+                let tx = await wethContract.approve(VAULT_ADDRESS, amountWeth);
+                await tx.wait();
+
+                btn.innerText = "Approving USDC (2/3)...";
+                tx = await usdcContract.approve(VAULT_ADDRESS, amountUsdc);
+                await tx.wait();
+
+                // 4. Calculate Tick & Slippage Math
                 const amountWethMin = (amountWeth * 99n) / 100n; // 1% Slippage Protection
                 const amountUsdcMin = (amountUsdc * 99n) / 100n;
 
-                // 3. Tick Math based on selected risk
-                const currentTick = -199340; // Mock current tick of pool
+                const currentTick = -199340; // Base baseline for testing
                 const tickSpacing = 200;
                 let tickLower, tickUpper;
 
@@ -331,8 +356,9 @@
                     tickUpper = currentTick + 400;
                 }
 
-                // 4. Send the Transaction
-                const tx = await vaultContract.depositAndStake(
+                // 5. Send the Final Deposit Transaction
+                btn.innerText = "Confirming Deposit (3/3)...";
+                tx = await vaultContract.depositAndStake(
                     WETH_ADDRESS,
                     USDC_ADDRESS,
                     amountWeth,
@@ -344,16 +370,20 @@
                     tickUpper
                 );
 
-                btn.innerText = "Waiting for Blockchain...";
-                await tx.wait(); // Wait for it to confirm on Base
+                btn.innerText = "Waiting for Blockchain Confirmation...";
+                await tx.wait();
 
                 alert("Successfully Deposited and Staked into the Vault!");
                 btn.innerText = "Deposit & Stake in Vault";
                 btn.disabled = false;
 
+                // Clear inputs after success
+                document.getElementById('weth-amount').value = "";
+                document.getElementById('usdc-amount').value = "";
+
             } catch (error) {
                 console.error(error);
-                alert("Transaction Failed. Check console for details.");
+                alert("Transaction Failed or Rejected. Check console for details.");
                 btn.innerText = "Deposit & Stake in Vault";
                 btn.disabled = false;
             }
