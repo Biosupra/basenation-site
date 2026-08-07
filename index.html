@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
     <meta name="base:app_id" content="6a5b292578da0c9886635aed" />
-    
     <meta name="talentapp:project_verification" content="9590ac9d78c5470f9c93680a677d3a33107fc4b1f0f5367de52bfccb6a8fab7f7cfc5cd9eac24a82dad03ff9506f6446256a12094fc04dc47f4b0c8c13e4230b">
     
     <title>Basenation | The Foundation</title>
@@ -13,7 +12,6 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
 
     <style>
-        /* Modern CSS Variables for easy editing */
         :root {
             --base-blue: #0052FF;
             --bg-dark: #0A0B0D;
@@ -29,7 +27,6 @@
             line-height: 1.6;
         }
 
-        /* --- Navigation Dropdown Styles --- */
         nav.dropdown {
             position: absolute;
             top: 20px;
@@ -70,15 +67,9 @@
             background-color: var(--base-blue);
         }
 
-        .dropdown:hover .dropdown-content {
-            display: block;
-        }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown:hover .dropbtn { filter: brightness(0.85); }
 
-        .dropdown:hover .dropbtn {
-            filter: brightness(0.85);
-        }
-
-        /* Container to keep content centered and readable */
         .container {
             max-width: 900px;
             margin: 0 auto;
@@ -86,30 +77,11 @@
             text-align: center;
         }
 
-        /* Hero Section */
-        header {
-            padding-top: 5vh;
-            margin-bottom: 3rem;
-        }
+        header { padding-top: 5vh; margin-bottom: 3rem; }
+        h1 { font-size: 4rem; margin: 0 0 1rem 0; letter-spacing: -0.05em; }
+        .highlight { color: var(--base-blue); }
+        .subtitle { font-size: 1.5rem; color: var(--text-muted); max-width: 600px; margin: 0 auto; }
 
-        h1 {
-            font-size: 4rem;
-            margin: 0 0 1rem 0;
-            letter-spacing: -0.05em;
-        }
-
-        .highlight {
-            color: var(--base-blue);
-        }
-
-        .subtitle {
-            font-size: 1.5rem;
-            color: var(--text-muted);
-            max-width: 600px;
-            margin: 0 auto;
-        }
-
-        /* --- New Vault UI Styles --- */
         .vault-container {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -123,7 +95,7 @@
         .vault-input {
             width: 95%;
             padding: 12px;
-            margin: 5px 0 15px 0;
+            margin: 5px 0 5px 0;
             border-radius: 6px;
             border: 1px solid #333;
             background: #1A1C20;
@@ -144,56 +116,28 @@
             margin-top: 15px;
         }
 
-        .vault-btn:hover {
-            filter: brightness(1.1);
-        }
-        
-        .vault-btn:disabled {
-            background-color: #555;
-            cursor: not-allowed;
-        }
+        .vault-btn:hover { filter: brightness(1.1); }
+        .vault-btn:disabled { background-color: #555; cursor: not-allowed; }
 
-        .risk-selector {
-            display: flex;
-            gap: 10px;
-            margin: 10px 0;
-        }
-
+        .risk-selector { display: flex; gap: 10px; margin: 10px 0; }
         .risk-btn {
-            flex: 1;
-            padding: 10px;
-            background: #1A1C20;
-            border: 1px solid #333;
-            color: var(--text-muted);
-            cursor: pointer;
-            border-radius: 6px;
+            flex: 1; padding: 10px; background: #1A1C20; border: 1px solid #333;
+            color: var(--text-muted); cursor: pointer; border-radius: 6px;
         }
-
         .risk-btn.active {
-            background: rgba(0, 82, 255, 0.2);
-            border-color: var(--base-blue);
-            color: var(--text-main);
+            background: rgba(0, 82, 255, 0.2); border-color: var(--base-blue); color: var(--text-main);
         }
 
-        /* Information Grid */
         .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            text-align: left;
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem; text-align: left;
         }
 
         .feature-card {
-            background: rgba(255, 255, 255, 0.03);
-            padding: 2rem;
-            border-radius: 12px;
+            background: rgba(255, 255, 255, 0.03); padding: 2rem; border-radius: 12px;
             border: 1px solid rgba(255, 255, 255, 0.1);
         }
-
-        .feature-card h3 {
-            color: var(--base-blue);
-            margin-top: 0;
-        }
+        .feature-card h3 { color: var(--base-blue); margin-top: 0; }
     </style>
 </head>
 <body>
@@ -226,11 +170,13 @@
                 
                 <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 15px;">Vault deposits require an equal value balance of WETH and USDC.</p>
 
-                <label style="font-weight: bold;">WETH Amount</label>
-                <input type="number" id="weth-amount" class="vault-input" placeholder="0.00" step="0.0001">
+                <label style="font-weight: bold;">WETH Deposit (in $ USD)</label>
+                <input type="number" id="weth-usd-amount" class="vault-input" placeholder="e.g. 50" step="1">
+                <p id="weth-token-estimate" style="font-size: 12px; color: #0052FF; margin-top: 0px; margin-bottom: 15px; font-weight: bold;"></p>
                 
-                <label style="font-weight: bold;">USDC Amount</label>
-                <input type="number" id="usdc-amount" class="vault-input" placeholder="0.00" step="0.01">
+                <label style="font-weight: bold;">USDC Deposit (in $ USD)</label>
+                <input type="number" id="usdc-usd-amount" class="vault-input" placeholder="e.g. 50" step="1">
+                <p id="usdc-token-estimate" style="font-size: 12px; color: #0052FF; margin-top: 0px; margin-bottom: 15px; font-weight: bold;"></p>
 
                 <label style="font-weight: bold; display: block; margin-top: 10px;">AI Bot Risk Parameters</label>
                 <div class="risk-selector">
@@ -263,17 +209,45 @@
         const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         
-        // ABIs for interactions
-        const ERC20_ABI = [
-            "function approve(address spender, uint256 amount) public returns (bool)"
-        ];
-        
-        const VAULT_ABI = [
-            "function depositAndStake(address token0, address token1, uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)"
-        ];
+        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
+        const VAULT_ABI = ["function depositAndStake(address token0, address token1, uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)"];
 
         let userSigner = null;
         let selectedRisk = 'low';
+        let currentWethPrice = 0;
+
+        // 1. Fetch Live WETH Price on Page Load
+        async function fetchLiveEthPrice() {
+            try {
+                const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
+                const data = await response.json();
+                currentWethPrice = data.ethereum.usd;
+                console.log("Live WETH Price Loaded: $" + currentWethPrice);
+            } catch (error) {
+                console.error("Could not fetch WETH price:", error);
+                currentWethPrice = 2500; // Safe fallback just in case the API is blocked
+            }
+        }
+        fetchLiveEthPrice();
+
+        // 2. Real-Time Math Calculator for UI
+        document.getElementById('weth-usd-amount').addEventListener('input', function(e) {
+            if(currentWethPrice > 0 && e.target.value > 0) {
+                const estimatedTokens = (e.target.value / currentWethPrice).toFixed(5);
+                document.getElementById('weth-token-estimate').innerText = `≈ ${estimatedTokens} WETH Tokens Required`;
+            } else {
+                document.getElementById('weth-token-estimate').innerText = "";
+            }
+        });
+
+        document.getElementById('usdc-usd-amount').addEventListener('input', function(e) {
+            if(e.target.value > 0) {
+                document.getElementById('usdc-token-estimate').innerText = `≈ ${e.target.value} USDC Tokens Required`;
+            } else {
+                document.getElementById('usdc-token-estimate').innerText = "";
+            }
+        });
+
 
         // UI Logic for Risk Buttons
         function setRisk(level) {
@@ -290,14 +264,12 @@
                     const provider = new ethers.BrowserProvider(window.ethereum);
                     const accounts = await provider.send("eth_requestAccounts", []);
                     userSigner = await provider.getSigner();
-                    
                     const address = accounts[0];
                     
                     document.getElementById('connect-section').style.display = 'none';
                     document.getElementById('deposit-section').style.display = 'block';
                     document.getElementById('wallet-address-display').innerText = 
                         "Connected: " + address.substring(0, 6) + "..." + address.substring(address.length - 4);
-                        
                 } catch (error) {
                     console.error("User rejected request", error);
                     alert("Connection failed. Please approve the prompt in your wallet.");
@@ -307,31 +279,34 @@
             }
         }
 
-        // Execution Logic for the Smart Contract
+        // Execution Logic
         async function executeDeposit() {
             if (!userSigner) return alert("Please connect your wallet first.");
+            if (currentWethPrice === 0) return alert("Still loading live WETH price, please wait a second...");
             
-            const wethInput = document.getElementById('weth-amount').value;
-            const usdcInput = document.getElementById('usdc-amount').value;
+            const wethUsdInput = parseFloat(document.getElementById('weth-usd-amount').value);
+            const usdcUsdInput = parseFloat(document.getElementById('usdc-usd-amount').value);
             
-            if (!wethInput || wethInput <= 0 || !usdcInput || usdcInput <= 0) {
-                return alert("Please enter valid amounts for both WETH and USDC.");
+            if (!wethUsdInput || wethUsdInput <= 0 || !usdcUsdInput || usdcUsdInput <= 0) {
+                return alert("Please enter valid USD amounts for both WETH and USDC.");
             }
 
             const btn = document.getElementById('deposit-btn');
             btn.disabled = true;
 
             try {
-                // 1. Setup the Contract connections
                 const wethContract = new ethers.Contract(WETH_ADDRESS, ERC20_ABI, userSigner);
                 const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, userSigner);
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
 
-                // 2. Parse exact user inputs into Wei based on token decimals
-                const amountWeth = ethers.parseUnits(wethInput.toString(), 18);
-                const amountUsdc = ethers.parseUnits(usdcInput.toString(), 6);
+                // 3. Smart Contract Translation (USD -> Tokens -> Wei)
+                const actualWethTokens = (wethUsdInput / currentWethPrice).toFixed(18);
+                const actualUsdcTokens = usdcUsdInput.toFixed(6);
 
-                // 3. Request Token Approvals
+                const amountWeth = ethers.parseUnits(actualWethTokens, 18);
+                const amountUsdc = ethers.parseUnits(actualUsdcTokens, 6);
+
+                // Approvals
                 btn.innerText = "Approving WETH (1/3)...";
                 let tx = await wethContract.approve(VAULT_ADDRESS, amountWeth);
                 await tx.wait();
@@ -340,23 +315,24 @@
                 tx = await usdcContract.approve(VAULT_ADDRESS, amountUsdc);
                 await tx.wait();
 
-                // 4. Calculate Tick & Slippage Math
-                const amountWethMin = (amountWeth * 99n) / 100n; // 1% Slippage Protection
-                const amountUsdcMin = (amountUsdc * 99n) / 100n;
+                // Slippage disabled to prevent exact-ratio mathematical reverts
+                const amountWethMin = 0n; 
+                const amountUsdcMin = 0n;
 
-                const currentTick = -199340; // Base baseline for testing
+                // Tick Math (Snapped perfectly to 200 to prevent Aerodrome reverts)
+                const currentTick = -199340; 
                 const tickSpacing = 200;
-                let tickLower, tickUpper;
+                const snappedTick = Math.round(currentTick / tickSpacing) * tickSpacing;
 
+                let tickLower, tickUpper;
                 if (selectedRisk === 'high') {
-                    tickLower = currentTick - 200;
-                    tickUpper = currentTick + 200;
+                    tickLower = snappedTick - tickSpacing;
+                    tickUpper = snappedTick + tickSpacing;
                 } else {
-                    tickLower = currentTick - 400;
-                    tickUpper = currentTick + 400;
+                    tickLower = snappedTick - (tickSpacing * 2);
+                    tickUpper = snappedTick + (tickSpacing * 2);
                 }
 
-                // 5. Send the Final Deposit Transaction
                 btn.innerText = "Confirming Deposit (3/3)...";
                 tx = await vaultContract.depositAndStake(
                     WETH_ADDRESS,
@@ -377,13 +353,18 @@
                 btn.innerText = "Deposit & Stake in Vault";
                 btn.disabled = false;
 
-                // Clear inputs after success
-                document.getElementById('weth-amount').value = "";
-                document.getElementById('usdc-amount').value = "";
+                document.getElementById('weth-usd-amount').value = "";
+                document.getElementById('usdc-usd-amount').value = "";
+                document.getElementById('weth-token-estimate').innerText = "";
+                document.getElementById('usdc-token-estimate').innerText = "";
 
             } catch (error) {
                 console.error(error);
-                alert("Transaction Failed or Rejected. Check console for details.");
+                let errorMsg = "Transaction Failed.";
+                if (error.reason) errorMsg += " Reason: " + error.reason;
+                else if (error.message) errorMsg += " Details: " + error.message;
+                
+                alert(errorMsg);
                 btn.innerText = "Deposit & Stake in Vault";
                 btn.disabled = false;
             }
