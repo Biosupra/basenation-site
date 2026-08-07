@@ -18,125 +18,29 @@
             --text-main: #F3F4F6;
             --text-muted: #9CA3AF;
         }
-
-        body {
-            margin: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg-dark);
-            color: var(--text-main);
-            line-height: 1.6;
-        }
-
-        nav.dropdown {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            display: inline-block;
-            z-index: 1000;
-        }
-
-        .dropbtn {
-            background-color: var(--base-blue);
-            color: var(--text-main);
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            cursor: pointer;
-            border-radius: 4px;
-        }
-
-        .dropdown-content {
-            display: none;
-            position: absolute;
-            background-color: var(--bg-dark);
-            min-width: 160px;
-            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5);
-            border: 1px solid var(--text-muted);
-            border-radius: 4px;
-            overflow: hidden;
-        }
-
-        .dropdown-content a {
-            color: var(--text-main);
-            padding: 12px 16px;
-            text-decoration: none;
-            display: block;
-        }
-
-        .dropdown-content a:hover {
-            background-color: var(--base-blue);
-        }
-
+        body { margin: 0; font-family: -apple-system, sans-serif; background-color: var(--bg-dark); color: var(--text-main); line-height: 1.6; }
+        nav.dropdown { position: absolute; top: 20px; left: 20px; display: inline-block; z-index: 1000; }
+        .dropbtn { background-color: var(--base-blue); color: var(--text-main); padding: 10px 20px; font-size: 16px; border: none; cursor: pointer; border-radius: 4px; }
+        .dropdown-content { display: none; position: absolute; background-color: var(--bg-dark); min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); border: 1px solid var(--text-muted); border-radius: 4px; overflow: hidden; }
+        .dropdown-content a { color: var(--text-main); padding: 12px 16px; text-decoration: none; display: block; }
+        .dropdown-content a:hover { background-color: var(--base-blue); }
         .dropdown:hover .dropdown-content { display: block; }
         .dropdown:hover .dropbtn { filter: brightness(0.85); }
-
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-            padding: 4rem 2rem;
-            text-align: center;
-        }
-
+        .container { max-width: 900px; margin: 0 auto; padding: 4rem 2rem; text-align: center; }
         header { padding-top: 5vh; margin-bottom: 3rem; }
         h1 { font-size: 4rem; margin: 0 0 1rem 0; letter-spacing: -0.05em; }
         .highlight { color: var(--base-blue); }
         .subtitle { font-size: 1.5rem; color: var(--text-muted); max-width: 600px; margin: 0 auto; }
-
-        .vault-container {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 12px;
-            padding: 2rem;
-            max-width: 500px;
-            margin: 0 auto 3rem auto;
-            text-align: left;
-        }
-        
-        .vault-input {
-            width: 95%;
-            padding: 12px;
-            margin: 5px 0 5px 0;
-            border-radius: 6px;
-            border: 1px solid #333;
-            background: #1A1C20;
-            color: white;
-            font-size: 16px;
-        }
-
-        .vault-btn {
-            width: 100%;
-            padding: 15px;
-            background-color: var(--base-blue);
-            color: white;
-            font-size: 18px;
-            font-weight: bold;
-            border: none;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-top: 15px;
-        }
-
+        .vault-container { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 2rem; max-width: 500px; margin: 0 auto 3rem auto; text-align: left; }
+        .vault-input { width: 95%; padding: 12px; margin: 5px 0 5px 0; border-radius: 6px; border: 1px solid #333; background: #1A1C20; color: white; font-size: 16px; }
+        .vault-btn { width: 100%; padding: 15px; background-color: var(--base-blue); color: white; font-size: 18px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px; }
         .vault-btn:hover { filter: brightness(1.1); }
         .vault-btn:disabled { background-color: #555; cursor: not-allowed; }
-
         .risk-selector { display: flex; gap: 10px; margin: 10px 0; }
-        .risk-btn {
-            flex: 1; padding: 10px; background: #1A1C20; border: 1px solid #333;
-            color: var(--text-muted); cursor: pointer; border-radius: 6px;
-        }
-        .risk-btn.active {
-            background: rgba(0, 82, 255, 0.2); border-color: var(--base-blue); color: var(--text-main);
-        }
-
-        .features {
-            display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem; text-align: left;
-        }
-
-        .feature-card {
-            background: rgba(255, 255, 255, 0.03); padding: 2rem; border-radius: 12px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
+        .risk-btn { flex: 1; padding: 10px; background: #1A1C20; border: 1px solid #333; color: var(--text-muted); cursor: pointer; border-radius: 6px; }
+        .risk-btn.active { background: rgba(0, 82, 255, 0.2); border-color: var(--base-blue); color: var(--text-main); }
+        .features { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; text-align: left; }
+        .feature-card { background: rgba(255, 255, 255, 0.03); padding: 2rem; border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.1); }
         .feature-card h3 { color: var(--base-blue); margin-top: 0; }
     </style>
 </head>
@@ -185,9 +89,11 @@
                 </div>
 
                 <button class="vault-btn" id="deposit-btn" onclick="executeDeposit()">Deposit & Stake in Vault</button>
+                
+                <p id="error-display" style="color: #FF4444; font-size: 14px; margin-top: 15px; text-align: center; font-weight: bold;"></p>
             </div>
         </section>
-
+        
         <section class="features">
             <div class="feature-card">
                 <h3>About Us</h3>
@@ -208,48 +114,50 @@
         const VAULT_ADDRESS = "0xD63C0c90b6C0140cE57ba4ccDb2EB93DE7c9784E";
         const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+        const POOL_ADDRESS = "0x160d7e9d948b16c163332a277b393c288408eb12"; 
         
-        const ERC20_ABI = ["function approve(address spender, uint256 amount) public returns (bool)"];
+        const ERC20_ABI = [
+            "function approve(address spender, uint256 amount) public returns (bool)",
+            "function allowance(address owner, address spender) public view returns (uint256)"
+        ];
+        
+        const POOL_ABI = [
+            "function slot0() external view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, bool unlocked)"
+        ];
+
         const VAULT_ABI = ["function depositAndStake(address token0, address token1, uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)"];
 
         let userSigner = null;
+        let globalUserAddress = null;
         let selectedRisk = 'low';
         let currentWethPrice = 0;
 
-        // 1. Fetch Live WETH Price on Page Load
+        // Fetch Live WETH Price on Page Load
         async function fetchLiveEthPrice() {
             try {
                 const response = await fetch("https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd");
                 const data = await response.json();
                 currentWethPrice = data.ethereum.usd;
-                console.log("Live WETH Price Loaded: $" + currentWethPrice);
             } catch (error) {
-                console.error("Could not fetch WETH price:", error);
-                currentWethPrice = 2500; // Safe fallback just in case the API is blocked
+                currentWethPrice = 2500; // Fallback
             }
         }
         fetchLiveEthPrice();
 
-        // 2. Real-Time Math Calculator for UI
+        // Real-Time Math Calculator for UI
         document.getElementById('weth-usd-amount').addEventListener('input', function(e) {
             if(currentWethPrice > 0 && e.target.value > 0) {
                 const estimatedTokens = (e.target.value / currentWethPrice).toFixed(5);
                 document.getElementById('weth-token-estimate').innerText = `≈ ${estimatedTokens} WETH Tokens Required`;
-            } else {
-                document.getElementById('weth-token-estimate').innerText = "";
-            }
+            } else { document.getElementById('weth-token-estimate').innerText = ""; }
         });
 
         document.getElementById('usdc-usd-amount').addEventListener('input', function(e) {
             if(e.target.value > 0) {
                 document.getElementById('usdc-token-estimate').innerText = `≈ ${e.target.value} USDC Tokens Required`;
-            } else {
-                document.getElementById('usdc-token-estimate').innerText = "";
-            }
+            } else { document.getElementById('usdc-token-estimate').innerText = ""; }
         });
 
-
-        // UI Logic for Risk Buttons
         function setRisk(level) {
             selectedRisk = level;
             document.getElementById('btn-low-risk').classList.remove('active');
@@ -264,14 +172,13 @@
                     const provider = new ethers.BrowserProvider(window.ethereum);
                     const accounts = await provider.send("eth_requestAccounts", []);
                     userSigner = await provider.getSigner();
-                    const address = accounts[0];
+                    globalUserAddress = accounts[0];
                     
                     document.getElementById('connect-section').style.display = 'none';
                     document.getElementById('deposit-section').style.display = 'block';
                     document.getElementById('wallet-address-display').innerText = 
-                        "Connected: " + address.substring(0, 6) + "..." + address.substring(address.length - 4);
+                        "Connected: " + globalUserAddress.substring(0, 6) + "..." + globalUserAddress.substring(globalUserAddress.length - 4);
                 } catch (error) {
-                    console.error("User rejected request", error);
                     alert("Connection failed. Please approve the prompt in your wallet.");
                 }
             } else {
@@ -279,7 +186,7 @@
             }
         }
 
-        // Execution Logic
+        // Master Execution Logic
         async function executeDeposit() {
             if (!userSigner) return alert("Please connect your wallet first.");
             if (currentWethPrice === 0) return alert("Still loading live WETH price, please wait a second...");
@@ -292,35 +199,43 @@
             }
 
             const btn = document.getElementById('deposit-btn');
+            const errDisplay = document.getElementById('error-display');
             btn.disabled = true;
+            errDisplay.innerText = ""; // Clear old errors
 
             try {
                 const wethContract = new ethers.Contract(WETH_ADDRESS, ERC20_ABI, userSigner);
                 const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, userSigner);
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
+                const poolContract = new ethers.Contract(POOL_ADDRESS, POOL_ABI, userSigner);
 
-                // 3. Smart Contract Translation (USD -> Tokens -> Wei)
                 const actualWethTokens = (wethUsdInput / currentWethPrice).toFixed(18);
                 const actualUsdcTokens = usdcUsdInput.toFixed(6);
 
                 const amountWeth = ethers.parseUnits(actualWethTokens, 18);
                 const amountUsdc = ethers.parseUnits(actualUsdcTokens, 6);
 
-                // Approvals
-                btn.innerText = "Approving WETH (1/3)...";
-                let tx = await wethContract.approve(VAULT_ADDRESS, amountWeth);
-                await tx.wait();
+                // 1. Smart Allowance Checks (Stops the infinite approval loop)
+                btn.innerText = "Checking Allowances...";
+                const allowanceWeth = await wethContract.allowance(globalUserAddress, VAULT_ADDRESS);
+                if (allowanceWeth < amountWeth) {
+                    btn.innerText = "Approving WETH (Once)...";
+                    let tx = await wethContract.approve(VAULT_ADDRESS, ethers.MaxUint256);
+                    await tx.wait();
+                }
 
-                btn.innerText = "Approving USDC (2/3)...";
-                tx = await usdcContract.approve(VAULT_ADDRESS, amountUsdc);
-                await tx.wait();
+                const allowanceUsdc = await usdcContract.allowance(globalUserAddress, VAULT_ADDRESS);
+                if (allowanceUsdc < amountUsdc) {
+                    btn.innerText = "Approving USDC (Once)...";
+                    let tx = await usdcContract.approve(VAULT_ADDRESS, ethers.MaxUint256);
+                    await tx.wait();
+                }
 
-                // Slippage disabled to prevent exact-ratio mathematical reverts
-                const amountWethMin = 0n; 
-                const amountUsdcMin = 0n;
-
-                // Tick Math (Snapped perfectly to 200 to prevent Aerodrome reverts)
-                const currentTick = -199340; 
+                // 2. Fetch Live Tick (Fixes the math revert!)
+                btn.innerText = "Aligning to Live Pool Math...";
+                const slot0 = await poolContract.slot0();
+                const currentTick = Number(slot0.tick);
+                
                 const tickSpacing = 200;
                 const snappedTick = Math.round(currentTick / tickSpacing) * tickSpacing;
 
@@ -333,14 +248,15 @@
                     tickUpper = snappedTick + (tickSpacing * 2);
                 }
 
-                btn.innerText = "Confirming Deposit (3/3)...";
-                tx = await vaultContract.depositAndStake(
+                // 3. Final Deposit Execution
+                btn.innerText = "Confirming Deposit (Final Step)...";
+                let tx = await vaultContract.depositAndStake(
                     WETH_ADDRESS,
                     USDC_ADDRESS,
                     amountWeth,
                     amountUsdc,
-                    amountWethMin,
-                    amountUsdcMin,
+                    0n, // Slippage 0n
+                    0n, // Slippage 0n
                     tickSpacing,
                     tickLower,
                     tickUpper
@@ -353,6 +269,7 @@
                 btn.innerText = "Deposit & Stake in Vault";
                 btn.disabled = false;
 
+                // Reset inputs
                 document.getElementById('weth-usd-amount').value = "";
                 document.getElementById('usdc-usd-amount').value = "";
                 document.getElementById('weth-token-estimate').innerText = "";
@@ -360,11 +277,13 @@
 
             } catch (error) {
                 console.error(error);
-                let errorMsg = "Transaction Failed.";
-                if (error.reason) errorMsg += " Reason: " + error.reason;
-                else if (error.message) errorMsg += " Details: " + error.message;
+                let errorMsg = "Blockchain Error: ";
+                if (error.reason) errorMsg += error.reason;
+                else if (error.message) errorMsg += error.message;
                 
-                alert(errorMsg);
+                // Inject the error directly onto the screen so you can actually read it
+                errDisplay.innerText = errorMsg; 
+                
                 btn.innerText = "Deposit & Stake in Vault";
                 btn.disabled = false;
             }
