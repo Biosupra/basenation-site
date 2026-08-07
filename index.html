@@ -90,7 +90,7 @@
 
                 <button class="vault-btn" id="deposit-btn" onclick="executeDeposit()">Deposit & Stake in Vault</button>
                 
-                <p id="error-display" style="color: #FF4444; font-size: 14px; margin-top: 15px; text-align: center; font-weight: bold;"></p>
+                <p id="error-display" style="color: #FF4444; font-size: 14px; margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></p>
             </div>
         </section>
         
@@ -114,15 +114,10 @@
         const VAULT_ADDRESS = "0xD63C0c90b6C0140cE57ba4ccDb2EB93DE7c9784E";
         const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-        const POOL_ADDRESS = "0x160d7e9d948b16c163332a277b393c288408eb12"; 
         
         const ERC20_ABI = [
             "function approve(address spender, uint256 amount) public returns (bool)",
             "function allowance(address owner, address spender) public view returns (uint256)"
-        ];
-        
-        const POOL_ABI = [
-            "function slot0() external view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, bool unlocked)"
         ];
 
         const VAULT_ABI = ["function depositAndStake(address token0, address token1, uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)"];
@@ -201,13 +196,12 @@
             const btn = document.getElementById('deposit-btn');
             const errDisplay = document.getElementById('error-display');
             btn.disabled = true;
-            errDisplay.innerText = ""; // Clear old errors
+            errDisplay.innerText = ""; 
 
             try {
                 const wethContract = new ethers.Contract(WETH_ADDRESS, ERC20_ABI, userSigner);
                 const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, userSigner);
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
-                const poolContract = new ethers.Contract(POOL_ADDRESS, POOL_ABI, userSigner);
 
                 const actualWethTokens = (wethUsdInput / currentWethPrice).toFixed(18);
                 const actualUsdcTokens = usdcUsdInput.toFixed(6);
@@ -215,7 +209,7 @@
                 const amountWeth = ethers.parseUnits(actualWethTokens, 18);
                 const amountUsdc = ethers.parseUnits(actualUsdcTokens, 6);
 
-                // 1. Smart Allowance Checks (Stops the infinite approval loop)
+                // 1. Smart Allowance Checks
                 btn.innerText = "Checking Allowances...";
                 const allowanceWeth = await wethContract.allowance(globalUserAddress, VAULT_ADDRESS);
                 if (allowanceWeth < amountWeth) {
@@ -231,10 +225,11 @@
                     await tx.wait();
                 }
 
-                // 2. Fetch Live Tick (Fixes the math revert!)
+                // 2. Fetch Live Tick Mathematically (Bypassing wrong pool addresses!)
                 btn.innerText = "Aligning to Live Pool Math...";
-                const slot0 = await poolContract.slot0();
-                const currentTick = Number(slot0.tick);
+                const adjustedPrice = currentWethPrice * 1e-12; // WETH (18 dec) vs USDC (6 dec) Scale Adjustment
+                const exactTick = Math.log(adjustedPrice) / Math.log(1.0001);
+                const currentTick = Math.floor(exactTick);
                 
                 const tickSpacing = 200;
                 const snappedTick = Math.round(currentTick / tickSpacing) * tickSpacing;
@@ -255,8 +250,8 @@
                     USDC_ADDRESS,
                     amountWeth,
                     amountUsdc,
-                    0n, // Slippage 0n
-                    0n, // Slippage 0n
+                    0n, 
+                    0n, 
                     tickSpacing,
                     tickLower,
                     tickUpper
@@ -281,9 +276,7 @@
                 if (error.reason) errorMsg += error.reason;
                 else if (error.message) errorMsg += error.message;
                 
-                // Inject the error directly onto the screen so you can actually read it
                 errDisplay.innerText = errorMsg; 
-                
                 btn.innerText = "Deposit & Stake in Vault";
                 btn.disabled = false;
             }
