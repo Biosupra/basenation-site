@@ -111,7 +111,7 @@
 
     <script>
         // LIVE Smart Contract Configuration
-        const VAULT_ADDRESS = "0xD63C0c90b6C0140cE57ba4ccDb2EB93DE7c9784E";
+        const VAULT_ADDRESS = "0xbabDa370580E841e19592a92E6622C773Aa057Eb";
         const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         const POOL_ADDRESS = "0xb2cc224c1c9feE385f8ad6a55b4d94E92359DC59"; // OFFICIAL AERODROME WETH/USDC POOL
@@ -232,7 +232,7 @@
                     await tx.wait();
                 }
 
-                // 2. Fetch EXACT Live Tick & Spacing directly from the Blockchain!
+                // 2. Fetch EXACT Live Tick & Spacing directly from the Blockchain
                 btn.innerText = "Syncing with Aerodrome Pool...";
                 
                 const tickSpacingRaw = await poolContract.tickSpacing();
