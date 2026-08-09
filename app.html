@@ -39,6 +39,15 @@
                 <p id="wallet-address-display" style="color: var(--base-blue); font-size: 15px; text-align: center; font-weight: bold; margin-top: 0;"></p>
                 
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
+                <h3 style="text-align: center; margin-bottom: 5px;">Deposit to Vault</h3>
+                <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0;">Enter USD value for each token.</p>
+                <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 5px;">
+                    <input type="number" id="deposit-weth-usd" class="vault-input" placeholder="$ WETH" step="1">
+                    <input type="number" id="deposit-usdc-usd" class="vault-input" placeholder="$ USDC" step="1">
+                </div>
+                <button class="vault-btn btn-claim" id="deposit-btn" onclick="executeDeposit()" style="margin-top: 5px; background-color: var(--base-blue);">Deposit & Stake</button>
+
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
                 <h3 style="text-align: center; margin-bottom: 5px;">Your Active Positions</h3>
                 <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0;">Manage your deposited Aerodrome NFTs.</p>
                 
@@ -56,12 +65,25 @@
         const BASE_CHAIN_ID = 8453n;
         const BASE_CHAIN_HEX = '0x2105'; 
         
-        // ADDED: positionOwner and getUserPositions to the ABI so the website can read the ledger
+        const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
+        const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+        const POOL_ADDRESS = "0x3fe04a59ebd38cf06080a6f60a98d124eb59392a";
+        
+        const ERC20_ABI = [
+            "function approve(address spender, uint256 amount) external returns (bool)"
+        ];
+        
+        const POOL_ABI = [
+            "function slot0() external view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, bool unlocked)"
+        ];
+
+        // ADDED: positionOwner, getUserPositions, and depositAndStake to the ABI
         const VAULT_ABI = [
             "function claimRewards(uint256 tokenId) external",
             "function withdrawPosition(uint256 tokenId) external",
             "function positionOwner(uint256 tokenId) external view returns (address)",
-            "function getUserPositions(address user) external view returns (uint256[])"
+            "function getUserPositions(address user) external view returns (uint256[])",
+            "function depositAndStake(address token0, address token1, uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)"
         ];
 
         let userSigner = null;
@@ -160,6 +182,70 @@
             } catch (error) {
                 container.innerHTML = '<p style="text-align: center; color: #FF4444;">Failed to load positions.</p>';
                 console.error(error);
+            }
+        }
+
+        async function executeDeposit() {
+            if (!userSigner) return alert("Connect wallet first.");
+            let wethUsd = parseFloat(document.getElementById('deposit-weth-usd').value) || 0;
+            let usdcUsd = parseFloat(document.getElementById('deposit-usdc-usd').value) || 0;
+            if (wethUsd <= 0 && usdcUsd <= 0) return alert("Enter a valid USD amount in at least one box.");
+
+            const btn = document.getElementById('deposit-btn');
+            const errDisplay = document.getElementById('manage-error-display');
+            btn.disabled = true;
+            errDisplay.style.display = 'block';
+            errDisplay.style.color = 'var(--text-main)';
+            errDisplay.innerText = "Step 1: Calculating WETH/USDC amounts from live price...";
+
+            try {
+                const poolContract = new ethers.Contract(POOL_ADDRESS, POOL_ABI, provider);
+                const slot0 = await poolContract.slot0();
+                const currentTick = Number(slot0.tick);
+                
+                const ratio = Math.pow(1.0001, currentTick);
+                const wethPriceUsd = ratio * Math.pow(10, 12); 
+
+                const wethTokens = wethUsd / wethPriceUsd;
+                const usdcTokens = usdcUsd;
+
+                const wethWei = ethers.parseUnits(wethTokens.toFixed(18), 18);
+                const usdcMwei = ethers.parseUnits(usdcTokens.toFixed(6), 6);
+
+                const wethContract = new ethers.Contract(WETH_ADDRESS, ERC20_ABI, userSigner);
+                const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, userSigner);
+
+                errDisplay.innerText = "Step 2: Approving WETH...";
+                const wethTx = await wethContract.approve(VAULT_ADDRESS, wethWei);
+                await wethTx.wait();
+
+                errDisplay.innerText = "Step 3: Approving USDC...";
+                const usdcTx = await usdcContract.approve(VAULT_ADDRESS, usdcMwei);
+                await usdcTx.wait();
+
+                errDisplay.innerText = "Step 4: Depositing & Staking to Vault...";
+                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
+                
+                // Set tick range +/- 150 ticks (~1.5% range, rounded to nearest tick spacing 50)
+                let tickLower = currentTick - (currentTick % 50) - 150;
+                let tickUpper = currentTick - (currentTick % 50) + 150;
+
+                const depositTx = await vaultContract.depositAndStake(
+                    WETH_ADDRESS, USDC_ADDRESS, wethWei, usdcMwei, 0n, 0n, 50n, BigInt(tickLower), BigInt(tickUpper)
+                );
+                
+                errDisplay.innerText = "Deposit TX sent! Hash: " + depositTx.hash;
+                await depositTx.wait();
+
+                errDisplay.style.color = '#10B981';
+                errDisplay.innerText = "Deposit successful! Loading your new position...";
+                document.getElementById('deposit-weth-usd').value = "";
+                document.getElementById('deposit-usdc-usd').value = "";
+                await loadUserPositions();
+                btn.disabled = false;
+            } catch (error) {
+                displayError("DEPOSIT FAILED", error.reason || error.shortMessage || error.message);
+                btn.disabled = false;
             }
         }
 
