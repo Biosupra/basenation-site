@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Basenation | The Foundation</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+
+    <style>
+        :root { --base-blue: #0052FF; --bg-dark: #0A0B0D; --text-main: #F3F4F6; --text-muted: #9CA3AF; }
+        body { margin: 0; font-family: -apple-system, sans-serif; background-color: var(--bg-dark); color: var(--text-main); line-height: 1.6; }
+        .container { max-width: 900px; margin: 0 auto; padding: 4rem 2rem; text-align: center; }
+        header { padding-top: 2vh; margin-bottom: 2rem; }
+        h1 { font-size: 3rem; margin: 0 0 1rem 0; letter-spacing: -0.05em; }
+        .highlight { color: var(--base-blue); }
+        .vault-container { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 2rem; max-width: 500px; margin: 0 auto; text-align: left; }
+        .vault-input { width: 95%; padding: 12px; margin: 5px 0 5px 0; border-radius: 6px; border: 1px solid #333; background: #1A1C20; color: white; font-size: 16px; }
+        .vault-btn { width: 100%; padding: 15px; background-color: var(--base-blue); color: white; font-size: 18px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px; transition: 0.2s; }
+        .btn-claim { background-color: #10B981; } 
+        .btn-withdraw { background-color: #EF4444; } 
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Base<span class="highlight">_Nation</span> App</h1>
+            <p style="color: var(--text-muted);">Cache-Bypass V1</p>
+        </header>
+
+        <section class="vault-container">
+            <h2 style="text-align: center; margin-top: 0;">Vault Dashboard</h2>
+            
+            <div id="connect-section">
+                <button class="vault-btn" id="connect-btn" onclick="connectWallet()">Connect Wallet</button>
+            </div>
+
+            <div id="deposit-section" style="display: none;">
+                <p id="wallet-address-display" style="color: var(--base-blue); font-size: 14px; text-align: center; font-weight: bold;"></p>
+                
+                <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
+                <h3 style="text-align: center; margin-bottom: 5px;">Manage Position</h3>
+                <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0;">Enter your NEW Aerodrome NFT ID to claim rewards or exit the Vault.</p>
+                
+                <input type="number" id="nft-token-id" class="vault-input" placeholder="Use ID: 74257818" step="1">
+                
+                <div style="display: flex; gap: 10px; margin-top: 10px;">
+                    <button class="vault-btn btn-claim" id="claim-btn" onclick="executeClaim()">Claim AERO</button>
+                    <button class="vault-btn btn-withdraw" id="withdraw-btn" onclick="executeWithdraw()">Withdraw</button>
+                </div>
+                <p id="manage-error-display" style="color: #FF4444; font-size: 14px; margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></p>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        const VAULT_ADDRESS = "0x62B075413e55DaE33254F625D52C067397ECb5E3"; 
+        
+        const VAULT_ABI = [
+            "function claimRewards(uint256 tokenId) external",
+            "function withdrawPosition(uint256 tokenId) external"
+        ];
+
+        let userSigner = null;
+
+        async function connectWallet() {
+            if (typeof window.ethereum !== 'undefined') {
+                try {
+                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    const accounts = await provider.send("eth_requestAccounts", []);
+                    userSigner = await provider.getSigner();
+                    
+                    document.getElementById('connect-section').style.display = 'none';
+                    document.getElementById('deposit-section').style.display = 'block';
+                    document.getElementById('wallet-address-display').innerText = "Connected!";
+                } catch (error) {
+                    alert("Connection failed.");
+                }
+            } else {
+                alert("No Web3 wallet detected!");
+            }
+        }
+
+        async function executeClaim() {
+            if (!userSigner) return alert("Connect wallet first.");
+            let tokenIdRaw = document.getElementById('nft-token-id').value;
+            if (!tokenIdRaw) return alert("Enter NFT ID");
+
+            const btn = document.getElementById('claim-btn');
+            const errDisplay = document.getElementById('manage-error-display');
+            btn.disabled = true;
+            errDisplay.innerText = "Simulating transaction...";
+
+            try {
+                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
+                
+                // Trims spaces and passes directly as a string to bypass mobile BigInt bugs
+                let tx = await vaultContract.claimRewards(tokenIdRaw.trim());
+                
+                errDisplay.innerText = "Tx sent! Waiting...";
+                await tx.wait();
+                
+                alert("AERO Rewards claimed!");
+                btn.disabled = false;
+                errDisplay.innerText = "";
+            } catch (error) {
+                // THE TRAP: This will popup exactly what went wrong.
+                let errText = error.reason || error.shortMessage || error.message || JSON.stringify(error);
+                alert("RAW BLOCKCHAIN ERROR:\n\n" + errText);
+                errDisplay.innerText = "Failed. See popup.";
+                btn.disabled = false;
+            }
+        }
+
+        async function executeWithdraw() {
+            if (!userSigner) return alert("Connect wallet first.");
+            let tokenIdRaw = document.getElementById('nft-token-id').value;
+            if (!tokenIdRaw) return alert("Enter NFT ID");
+
+            const btn = document.getElementById('withdraw-btn');
+            const errDisplay = document.getElementById('manage-error-display');
+            btn.disabled = true;
+            errDisplay.innerText = "Simulating transaction...";
+
+            try {
+                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
+                
+                let tx = await vaultContract.withdrawPosition(tokenIdRaw.trim());
+                
+                errDisplay.innerText = "Tx sent! Waiting...";
+                await tx.wait();
+                
+                alert("Position Withdrawn! The NFT is back in your wallet.");
+                document.getElementById('nft-token-id').value = "";
+                btn.disabled = false;
+                errDisplay.innerText = "";
+            } catch (error) {
+                let errText = error.reason || error.shortMessage || error.message || JSON.stringify(error);
+                alert("RAW BLOCKCHAIN ERROR:\n\n" + errText);
+                errDisplay.innerText = "Failed. See popup.";
+                btn.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
