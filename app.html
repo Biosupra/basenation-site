@@ -39,14 +39,11 @@
                 <p id="wallet-address-display" style="color: var(--base-blue); font-size: 15px; text-align: center; font-weight: bold; margin-top: 0;"></p>
                 
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
-                <h3 style="text-align: center; margin-bottom: 5px;">Manage Position</h3>
-                <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0;">Enter your Aerodrome NFT ID to claim rewards or exit the Vault.</p>
+                <h3 style="text-align: center; margin-bottom: 5px;">Your Active Positions</h3>
+                <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0;">Manage your deposited Aerodrome NFTs.</p>
                 
-                <input type="number" id="nft-token-id" class="vault-input" placeholder="Use ID: 74257818" step="1">
-                
-                <div style="display: flex; gap: 10px; margin-top: 10px;">
-                    <button class="vault-btn btn-claim" id="claim-btn" onclick="executeClaim()">Claim AERO</button>
-                    <button class="vault-btn btn-withdraw" id="withdraw-btn" onclick="executeWithdraw()">Withdraw</button>
+                <div id="positions-container">
+                    <p style="text-align: center; color: var(--text-muted);">Loading positions...</p>
                 </div>
                 
                 <p id="manage-error-display" style="color: #FF4444; font-size: 14px; margin-top: 15px; text-align: left; font-weight: bold; word-break: break-all; background: rgba(255,0,0,0.1); padding: 10px; border-radius: 6px; display: none;"></p>
@@ -55,15 +52,16 @@
     </div>
 
     <script>
-        const VAULT_ADDRESS = "0x62B075413e55DaE33254F625D52C067397ECb5E3"; 
+        const VAULT_ADDRESS = "0x489eFa1E845eA159212F0f69a0182b2Ed0031146"; 
         const BASE_CHAIN_ID = 8453n;
         const BASE_CHAIN_HEX = '0x2105'; 
         
-        // ADDED: positionOwner to the ABI so the website can read the ledger
+        // ADDED: positionOwner and getUserPositions to the ABI so the website can read the ledger
         const VAULT_ABI = [
             "function claimRewards(uint256 tokenId) external",
             "function withdrawPosition(uint256 tokenId) external",
-            "function positionOwner(uint256 tokenId) external view returns (address)"
+            "function positionOwner(uint256 tokenId) external view returns (address)",
+            "function getUserPositions(address user) external view returns (uint256[])"
         ];
 
         let userSigner = null;
@@ -86,6 +84,8 @@
                     document.getElementById('connect-section').style.display = 'none';
                     document.getElementById('deposit-section').style.display = 'block';
                     document.getElementById('wallet-address-display').innerText = globalUserAddress.substring(0, 6) + "..." + globalUserAddress.substring(globalUserAddress.length - 4);
+                    
+                    await loadUserPositions();
                 } catch (error) {
                     alert("Connection failed: " + error.message);
                 }
@@ -124,12 +124,50 @@
             }
         }
 
-        async function executeClaim() {
+        async function loadUserPositions() {
+            const container = document.getElementById('positions-container');
+            container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">Loading positions...</p>';
+            try {
+                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, provider);
+                const positions = await vaultContract.getUserPositions(globalUserAddress);
+                
+                if (positions.length === 0) {
+                    container.innerHTML = '<p style="text-align: center; color: var(--text-muted);">No active positions found.</p>';
+                    return;
+                }
+                
+                container.innerHTML = '';
+                for (let i = 0; i < positions.length; i++) {
+                    const tokenId = positions[i].toString();
+                    
+                    const card = document.createElement('div');
+                    card.style.background = 'rgba(255, 255, 255, 0.05)';
+                    card.style.border = '1px solid rgba(255, 255, 255, 0.1)';
+                    card.style.borderRadius = '8px';
+                    card.style.padding = '15px';
+                    card.style.marginTop = '10px';
+                    card.style.textAlign = 'center';
+                    
+                    card.innerHTML = `
+                        <h4 style="margin: 0 0 10px 0; color: var(--base-blue);">NFT ID: ${tokenId}</h4>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="vault-btn btn-claim" id="claim-btn-${tokenId}" onclick="executeClaim('${tokenId}')" style="margin-top: 0;">Claim AERO</button>
+                            <button class="vault-btn btn-withdraw" id="withdraw-btn-${tokenId}" onclick="executeWithdraw('${tokenId}')" style="margin-top: 0;">Withdraw</button>
+                        </div>
+                    `;
+                    container.appendChild(card);
+                }
+            } catch (error) {
+                container.innerHTML = '<p style="text-align: center; color: #FF4444;">Failed to load positions.</p>';
+                console.error(error);
+            }
+        }
+
+        async function executeClaim(tokenIdRaw) {
             if (!userSigner) return alert("Connect wallet first.");
-            let tokenIdRaw = document.getElementById('nft-token-id').value;
             if (!tokenIdRaw) return alert("Enter NFT ID");
 
-            const btn = document.getElementById('claim-btn');
+            const btn = document.getElementById('claim-btn-' + tokenIdRaw);
             const errDisplay = document.getElementById('manage-error-display');
             btn.disabled = true;
             errDisplay.style.display = 'none';
@@ -156,12 +194,11 @@
             }
         }
 
-        async function executeWithdraw() {
+        async function executeWithdraw(tokenIdRaw) {
             if (!userSigner) return alert("Connect wallet first.");
-            let tokenIdRaw = document.getElementById('nft-token-id').value;
             if (!tokenIdRaw) return alert("Enter NFT ID");
 
-            const btn = document.getElementById('withdraw-btn');
+            const btn = document.getElementById('withdraw-btn-' + tokenIdRaw);
             const errDisplay = document.getElementById('manage-error-display');
             btn.disabled = true;
             errDisplay.style.display = 'none';
@@ -181,7 +218,8 @@
                 await tx.wait();
                 
                 errDisplay.innerText = "Position Withdrawn! The NFT is back in your wallet.";
-                document.getElementById('nft-token-id').value = "";
+                // Refresh positions
+                await loadUserPositions();
                 btn.disabled = false;
             } catch (error) {
                 displayError("TRANSACTION FAILED", error.reason || error.shortMessage || error.message);
