@@ -24,7 +24,7 @@
     <div class="container">
         <header>
             <h1>Base<span class="highlight">_Nation</span> App</h1>
-            <p style="color: var(--text-muted);">Diagnostic V2</p>
+            <p style="color: var(--text-muted);">Network Enforcer V3</p>
         </header>
 
         <section class="vault-container">
@@ -35,7 +35,9 @@
             </div>
 
             <div id="deposit-section" style="display: none;">
-                <p id="wallet-address-display" style="color: var(--base-blue); font-size: 14px; text-align: center; font-weight: bold;"></p>
+                <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 2px;">Connected Wallet:</p>
+                <p id="wallet-address-display" style="color: var(--base-blue); font-size: 15px; text-align: center; font-weight: bold; margin-top: 0;"></p>
+                <p id="network-display" style="color: #10B981; font-size: 13px; text-align: center; font-weight: bold;"></p>
                 
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
                 <h3 style="text-align: center; margin-bottom: 5px;">Manage Position</h3>
@@ -55,6 +57,8 @@
 
     <script>
         const VAULT_ADDRESS = "0x62B075413e55DaE33254F625D52C067397ECb5E3"; 
+        const BASE_CHAIN_ID = 8453n;
+        const BASE_CHAIN_HEX = '0x2105'; // 8453 in hex
         
         const VAULT_ABI = [
             "function claimRewards(uint256 tokenId) external",
@@ -62,19 +66,43 @@
         ];
 
         let userSigner = null;
+        let provider = null;
 
         async function connectWallet() {
             if (typeof window.ethereum !== 'undefined') {
                 try {
-                    const provider = new ethers.BrowserProvider(window.ethereum);
+                    provider = new ethers.BrowserProvider(window.ethereum);
+                    
+                    // 1. Check Network First
+                    const network = await provider.getNetwork();
+                    if (network.chainId !== BASE_CHAIN_ID) {
+                        try {
+                            await window.ethereum.request({
+                                method: 'wallet_switchEthereumChain',
+                                params: [{ chainId: BASE_CHAIN_HEX }],
+                            });
+                            // Refresh provider after switch
+                            provider = new ethers.BrowserProvider(window.ethereum);
+                        } catch (switchError) {
+                            alert("CRITICAL: You are on the wrong network. Please manually switch your wallet to the BASE network and try again.");
+                            return;
+                        }
+                    }
+
+                    // 2. Connect Account
                     const accounts = await provider.send("eth_requestAccounts", []);
                     userSigner = await provider.getSigner();
+                    const address = accounts[0];
                     
                     document.getElementById('connect-section').style.display = 'none';
                     document.getElementById('deposit-section').style.display = 'block';
-                    document.getElementById('wallet-address-display').innerText = "Connected!";
+                    
+                    // Display Address so user can verify it matches the deposit wallet
+                    document.getElementById('wallet-address-display').innerText = address.substring(0, 6) + "..." + address.substring(address.length - 4);
+                    document.getElementById('network-display').innerText = "Network: Base Mainnet ✓";
+
                 } catch (error) {
-                    alert("Connection failed.");
+                    alert("Connection failed: " + error.message);
                 }
             } else {
                 alert("No Web3 wallet detected!");
@@ -84,10 +112,13 @@
         function displayError(error) {
             const errDisplay = document.getElementById('manage-error-display');
             errDisplay.style.display = 'block';
-            
-            // Extract the most readable part of the error
             let errText = error.reason || error.shortMessage || error.message || JSON.stringify(error);
-            errDisplay.innerHTML = "🚨 BLOCKCHAIN ERROR:<br><br>" + errText;
+            
+            if (errText === "NA" || errText === "{}") {
+                errText = "Wallet Gas Estimation Failed. Ensure you are on the Base Network, have ETH for gas, and are using the exact wallet address that made the deposit.";
+            }
+            
+            errDisplay.innerHTML = "🚨 ERROR:<br><br>" + errText;
         }
 
         async function executeClaim() {
@@ -103,11 +134,10 @@
             try {
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                // Using BigInt explicitly for safety
-                let tx = await vaultContract.claimRewards(BigInt(tokenIdRaw.trim()));
+                let tx = await vaultContract.claimRewards(tokenIdRaw.trim());
                 
                 errDisplay.style.display = 'block';
-                errDisplay.style.color = '#10B981'; // Green for success
+                errDisplay.style.color = '#10B981';
                 errDisplay.innerText = "Tx sent! Waiting for confirmation...";
                 await tx.wait();
                 
@@ -133,11 +163,10 @@
             try {
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                // Using BigInt explicitly for safety
-                let tx = await vaultContract.withdrawPosition(BigInt(tokenIdRaw.trim()));
+                let tx = await vaultContract.withdrawPosition(tokenIdRaw.trim());
                 
                 errDisplay.style.display = 'block';
-                errDisplay.style.color = '#10B981'; // Green for success
+                errDisplay.style.color = '#10B981';
                 errDisplay.innerText = "Tx sent! Waiting for confirmation...";
                 await tx.wait();
                 
