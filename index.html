@@ -128,7 +128,7 @@
 
     <script>
         // LIVE Smart Contract Configuration
-        const VAULT_ADDRESS = "0x62B075413e55DaE33254F625D52C067397ECb5E3"; // YOUR NEW VAULT
+        const VAULT_ADDRESS = "0x62B075413e55DaE33254F625D52C067397ECb5E3"; // YOUR FINAL VAULT
         const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         const POOL_ADDRESS = "0x3fe04a59ebd38cf06080a6f60a98d124eb59392a"; 
@@ -297,23 +297,20 @@
 
             } catch (error) {
                 console.error(error);
-                let errorMsg = "Blockchain Error: ";
-                if (error.reason) errorMsg += error.reason;
-                else if (error.message) errorMsg += error.message;
-                
-                errDisplay.innerText = errorMsg; 
+                let errorMsg = error.reason || error.shortMessage || error.message || "Unknown Blockchain Error";
+                errDisplay.innerText = "Error: " + errorMsg;
                 btn.innerText = "Deposit & Stake in Vault";
                 btn.disabled = false;
             }
         }
 
         // ==========================================
-        // CLAIM REWARDS LOGIC
+        // CLAIM REWARDS LOGIC (FIXED)
         // ==========================================
         async function executeClaim() {
             if (!userSigner) return alert("Please connect your wallet first.");
-            const tokenId = document.getElementById('nft-token-id').value;
-            if (!tokenId) return alert("Please enter your NFT Token ID to claim rewards.");
+            let tokenIdRaw = document.getElementById('nft-token-id').value;
+            if (!tokenIdRaw) return alert("Please enter your NFT Token ID to claim rewards.");
 
             const btn = document.getElementById('claim-btn');
             const errDisplay = document.getElementById('manage-error-display');
@@ -324,7 +321,8 @@
                 btn.innerText = "Claiming...";
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                let tx = await vaultContract.claimRewards(tokenId);
+                // BigInt wrapper safely scrubs hidden spaces that crash mobile inputs
+                let tx = await vaultContract.claimRewards(BigInt(tokenIdRaw.trim()));
                 
                 btn.innerText = "Waiting for Confirmation...";
                 await tx.wait();
@@ -335,22 +333,22 @@
                 
             } catch (error) {
                 console.error(error);
-                errDisplay.innerText = "Error: " + (error.reason || error.message);
+                let errorMsg = error.reason || error.shortMessage || error.message || "Unknown Blockchain Error";
+                errDisplay.innerText = "Error: " + errorMsg;
                 btn.innerText = "Claim AERO";
                 btn.disabled = false;
             }
         }
 
         // ==========================================
-        // WITHDRAW LOGIC
+        // WITHDRAW LOGIC (FIXED)
         // ==========================================
         async function executeWithdraw() {
             if (!userSigner) return alert("Please connect your wallet first.");
-            const tokenId = document.getElementById('nft-token-id').value;
-            if (!tokenId) return alert("Please enter your NFT Token ID to withdraw.");
+            let tokenIdRaw = document.getElementById('nft-token-id').value;
+            if (!tokenIdRaw) return alert("Please enter your NFT Token ID to withdraw.");
 
-            const confirmExit = confirm("Are you sure you want to withdraw your liquidity? This will claim any pending AERO and send the NFT to your wallet.");
-            if (!confirmExit) return;
+            // DELETED THE CONFIRM BOX HERE TO PREVENT MOBILE WALLET CRASHES
 
             const btn = document.getElementById('withdraw-btn');
             const errDisplay = document.getElementById('manage-error-display');
@@ -361,7 +359,8 @@
                 btn.innerText = "Withdrawing...";
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                let tx = await vaultContract.withdrawPosition(tokenId);
+                // BigInt wrapper safely scrubs hidden spaces that crash mobile inputs
+                let tx = await vaultContract.withdrawPosition(BigInt(tokenIdRaw.trim()));
                 
                 btn.innerText = "Waiting for Confirmation...";
                 await tx.wait();
@@ -373,7 +372,8 @@
                 
             } catch (error) {
                 console.error(error);
-                errDisplay.innerText = "Error: " + (error.reason || error.message);
+                let errorMsg = error.reason || error.shortMessage || error.message || "Unknown Blockchain Error";
+                errDisplay.innerText = "Error: " + errorMsg;
                 btn.innerText = "Withdraw";
                 btn.disabled = false;
             }
