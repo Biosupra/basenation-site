@@ -24,7 +24,7 @@
     <div class="container">
         <header>
             <h1>Base<span class="highlight">_Nation</span> App</h1>
-            <p style="color: var(--text-muted);">Network Enforcer V3</p>
+            <p style="color: var(--text-muted);">Diagnostic V4 (Forced Gas)</p>
         </header>
 
         <section class="vault-container">
@@ -37,7 +37,6 @@
             <div id="deposit-section" style="display: none;">
                 <p style="text-align: center; color: var(--text-muted); font-size: 13px; margin-bottom: 2px;">Connected Wallet:</p>
                 <p id="wallet-address-display" style="color: var(--base-blue); font-size: 15px; text-align: center; font-weight: bold; margin-top: 0;"></p>
-                <p id="network-display" style="color: #10B981; font-size: 13px; text-align: center; font-weight: bold;"></p>
                 
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
                 <h3 style="text-align: center; margin-bottom: 5px;">Manage Position</h3>
@@ -58,7 +57,7 @@
     <script>
         const VAULT_ADDRESS = "0x62B075413e55DaE33254F625D52C067397ECb5E3"; 
         const BASE_CHAIN_ID = 8453n;
-        const BASE_CHAIN_HEX = '0x2105'; // 8453 in hex
+        const BASE_CHAIN_HEX = '0x2105'; 
         
         const VAULT_ABI = [
             "function claimRewards(uint256 tokenId) external",
@@ -72,35 +71,18 @@
             if (typeof window.ethereum !== 'undefined') {
                 try {
                     provider = new ethers.BrowserProvider(window.ethereum);
-                    
-                    // 1. Check Network First
                     const network = await provider.getNetwork();
                     if (network.chainId !== BASE_CHAIN_ID) {
-                        try {
-                            await window.ethereum.request({
-                                method: 'wallet_switchEthereumChain',
-                                params: [{ chainId: BASE_CHAIN_HEX }],
-                            });
-                            // Refresh provider after switch
-                            provider = new ethers.BrowserProvider(window.ethereum);
-                        } catch (switchError) {
-                            alert("CRITICAL: You are on the wrong network. Please manually switch your wallet to the BASE network and try again.");
-                            return;
-                        }
+                        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_HEX }] });
+                        provider = new ethers.BrowserProvider(window.ethereum);
                     }
-
-                    // 2. Connect Account
                     const accounts = await provider.send("eth_requestAccounts", []);
                     userSigner = await provider.getSigner();
                     const address = accounts[0];
                     
                     document.getElementById('connect-section').style.display = 'none';
                     document.getElementById('deposit-section').style.display = 'block';
-                    
-                    // Display Address so user can verify it matches the deposit wallet
                     document.getElementById('wallet-address-display').innerText = address.substring(0, 6) + "..." + address.substring(address.length - 4);
-                    document.getElementById('network-display').innerText = "Network: Base Mainnet ✓";
-
                 } catch (error) {
                     alert("Connection failed: " + error.message);
                 }
@@ -113,12 +95,7 @@
             const errDisplay = document.getElementById('manage-error-display');
             errDisplay.style.display = 'block';
             let errText = error.reason || error.shortMessage || error.message || JSON.stringify(error);
-            
-            if (errText === "NA" || errText === "{}") {
-                errText = "Wallet Gas Estimation Failed. Ensure you are on the Base Network, have ETH for gas, and are using the exact wallet address that made the deposit.";
-            }
-            
-            errDisplay.innerHTML = "🚨 ERROR:<br><br>" + errText;
+            errDisplay.innerHTML = "🚨 TRANSACTION FAILED:<br><br>" + errText;
         }
 
         async function executeClaim() {
@@ -134,11 +111,12 @@
             try {
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                let tx = await vaultContract.claimRewards(tokenIdRaw.trim());
+                // THE FIX: Hardcoding 500,000 gas limit to battering-ram past the estimation crash
+                let tx = await vaultContract.claimRewards(BigInt(tokenIdRaw.trim()), { gasLimit: 500000 });
                 
                 errDisplay.style.display = 'block';
                 errDisplay.style.color = '#10B981';
-                errDisplay.innerText = "Tx sent! Waiting for confirmation...";
+                errDisplay.innerText = "Tx sent! Waiting for confirmation... Hash: " + tx.hash;
                 await tx.wait();
                 
                 errDisplay.innerText = "AERO Rewards successfully claimed!";
@@ -163,11 +141,12 @@
             try {
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                let tx = await vaultContract.withdrawPosition(tokenIdRaw.trim());
+                // THE FIX: Hardcoding 800,000 gas limit to battering-ram past the estimation crash
+                let tx = await vaultContract.withdrawPosition(BigInt(tokenIdRaw.trim()), { gasLimit: 800000 });
                 
                 errDisplay.style.display = 'block';
                 errDisplay.style.color = '#10B981';
-                errDisplay.innerText = "Tx sent! Waiting for confirmation...";
+                errDisplay.innerText = "Tx sent! Waiting for confirmation... Hash: " + tx.hash;
                 await tx.wait();
                 
                 errDisplay.innerText = "Position Withdrawn! The NFT is back in your wallet.";
