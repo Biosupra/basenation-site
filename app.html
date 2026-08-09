@@ -24,7 +24,7 @@
     <div class="container">
         <header>
             <h1>Base<span class="highlight">_Nation</span> App</h1>
-            <p style="color: var(--text-muted);">Cache-Bypass V1</p>
+            <p style="color: var(--text-muted);">Diagnostic V2</p>
         </header>
 
         <section class="vault-container">
@@ -47,7 +47,8 @@
                     <button class="vault-btn btn-claim" id="claim-btn" onclick="executeClaim()">Claim AERO</button>
                     <button class="vault-btn btn-withdraw" id="withdraw-btn" onclick="executeWithdraw()">Withdraw</button>
                 </div>
-                <p id="manage-error-display" style="color: #FF4444; font-size: 14px; margin-top: 15px; text-align: center; font-weight: bold; word-break: break-all;"></p>
+                
+                <p id="manage-error-display" style="color: #FF4444; font-size: 14px; margin-top: 15px; text-align: left; font-weight: bold; word-break: break-all; background: rgba(255,0,0,0.1); padding: 10px; border-radius: 6px; display: none;"></p>
             </div>
         </section>
     </div>
@@ -80,6 +81,15 @@
             }
         }
 
+        function displayError(error) {
+            const errDisplay = document.getElementById('manage-error-display');
+            errDisplay.style.display = 'block';
+            
+            // Extract the most readable part of the error
+            let errText = error.reason || error.shortMessage || error.message || JSON.stringify(error);
+            errDisplay.innerHTML = "🚨 BLOCKCHAIN ERROR:<br><br>" + errText;
+        }
+
         async function executeClaim() {
             if (!userSigner) return alert("Connect wallet first.");
             let tokenIdRaw = document.getElementById('nft-token-id').value;
@@ -88,25 +98,24 @@
             const btn = document.getElementById('claim-btn');
             const errDisplay = document.getElementById('manage-error-display');
             btn.disabled = true;
-            errDisplay.innerText = "Simulating transaction...";
+            errDisplay.style.display = 'none';
 
             try {
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                // Trims spaces and passes directly as a string to bypass mobile BigInt bugs
-                let tx = await vaultContract.claimRewards(tokenIdRaw.trim());
+                // Using BigInt explicitly for safety
+                let tx = await vaultContract.claimRewards(BigInt(tokenIdRaw.trim()));
                 
-                errDisplay.innerText = "Tx sent! Waiting...";
+                errDisplay.style.display = 'block';
+                errDisplay.style.color = '#10B981'; // Green for success
+                errDisplay.innerText = "Tx sent! Waiting for confirmation...";
                 await tx.wait();
                 
-                alert("AERO Rewards claimed!");
+                errDisplay.innerText = "AERO Rewards successfully claimed!";
                 btn.disabled = false;
-                errDisplay.innerText = "";
             } catch (error) {
-                // THE TRAP: This will popup exactly what went wrong.
-                let errText = error.reason || error.shortMessage || error.message || JSON.stringify(error);
-                alert("RAW BLOCKCHAIN ERROR:\n\n" + errText);
-                errDisplay.innerText = "Failed. See popup.";
+                console.error(error);
+                displayError(error);
                 btn.disabled = false;
             }
         }
@@ -119,24 +128,25 @@
             const btn = document.getElementById('withdraw-btn');
             const errDisplay = document.getElementById('manage-error-display');
             btn.disabled = true;
-            errDisplay.innerText = "Simulating transaction...";
+            errDisplay.style.display = 'none';
 
             try {
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                let tx = await vaultContract.withdrawPosition(tokenIdRaw.trim());
+                // Using BigInt explicitly for safety
+                let tx = await vaultContract.withdrawPosition(BigInt(tokenIdRaw.trim()));
                 
-                errDisplay.innerText = "Tx sent! Waiting...";
+                errDisplay.style.display = 'block';
+                errDisplay.style.color = '#10B981'; // Green for success
+                errDisplay.innerText = "Tx sent! Waiting for confirmation...";
                 await tx.wait();
                 
-                alert("Position Withdrawn! The NFT is back in your wallet.");
+                errDisplay.innerText = "Position Withdrawn! The NFT is back in your wallet.";
                 document.getElementById('nft-token-id').value = "";
                 btn.disabled = false;
-                errDisplay.innerText = "";
             } catch (error) {
-                let errText = error.reason || error.shortMessage || error.message || JSON.stringify(error);
-                alert("RAW BLOCKCHAIN ERROR:\n\n" + errText);
-                errDisplay.innerText = "Failed. See popup.";
+                console.error(error);
+                displayError(error);
                 btn.disabled = false;
             }
         }
