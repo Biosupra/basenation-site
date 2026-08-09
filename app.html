@@ -24,7 +24,7 @@
     <div class="container">
         <header>
             <h1>Base<span class="highlight">_Nation</span> App</h1>
-            <p style="color: var(--text-muted);">Diagnostic V4 (Forced Gas)</p>
+            <p style="color: var(--text-muted);">Ledger X-Ray V5</p>
         </header>
 
         <section class="vault-container">
@@ -40,7 +40,7 @@
                 
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
                 <h3 style="text-align: center; margin-bottom: 5px;">Manage Position</h3>
-                <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0;">Enter your NEW Aerodrome NFT ID to claim rewards or exit the Vault.</p>
+                <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0;">Enter your Aerodrome NFT ID to claim rewards or exit the Vault.</p>
                 
                 <input type="number" id="nft-token-id" class="vault-input" placeholder="Use ID: 74257818" step="1">
                 
@@ -59,13 +59,16 @@
         const BASE_CHAIN_ID = 8453n;
         const BASE_CHAIN_HEX = '0x2105'; 
         
+        // ADDED: positionOwner to the ABI so the website can read the ledger
         const VAULT_ABI = [
             "function claimRewards(uint256 tokenId) external",
-            "function withdrawPosition(uint256 tokenId) external"
+            "function withdrawPosition(uint256 tokenId) external",
+            "function positionOwner(uint256 tokenId) external view returns (address)"
         ];
 
         let userSigner = null;
         let provider = null;
+        let globalUserAddress = null;
 
         async function connectWallet() {
             if (typeof window.ethereum !== 'undefined') {
@@ -78,11 +81,11 @@
                     }
                     const accounts = await provider.send("eth_requestAccounts", []);
                     userSigner = await provider.getSigner();
-                    const address = accounts[0];
+                    globalUserAddress = accounts[0];
                     
                     document.getElementById('connect-section').style.display = 'none';
                     document.getElementById('deposit-section').style.display = 'block';
-                    document.getElementById('wallet-address-display').innerText = address.substring(0, 6) + "..." + address.substring(address.length - 4);
+                    document.getElementById('wallet-address-display').innerText = globalUserAddress.substring(0, 6) + "..." + globalUserAddress.substring(globalUserAddress.length - 4);
                 } catch (error) {
                     alert("Connection failed: " + error.message);
                 }
@@ -91,11 +94,34 @@
             }
         }
 
-        function displayError(error) {
+        function displayError(title, message) {
             const errDisplay = document.getElementById('manage-error-display');
             errDisplay.style.display = 'block';
-            let errText = error.reason || error.shortMessage || error.message || JSON.stringify(error);
-            errDisplay.innerHTML = "🚨 TRANSACTION FAILED:<br><br>" + errText;
+            errDisplay.innerHTML = `🚨 <b>${title}</b><br><br>${message}`;
+        }
+
+        // =====================================
+        // THE X-RAY PRE-CHECK
+        // =====================================
+        async function runLedgerCheck(vaultContract, tokenIdRaw) {
+            try {
+                const owner = await vaultContract.positionOwner(BigInt(tokenIdRaw.trim()));
+                
+                if (owner === "0x0000000000000000000000000000000000000000") {
+                    displayError("NFT DELETED BY BOT", "Your Keeper Bot likely rebalanced this position! NFT " + tokenIdRaw + " was destroyed and a new one was minted. Check the 'ERC721 Token Txns' tab on your Vault's BaseScan page to find your new Token ID.");
+                    return false;
+                }
+                
+                if (owner.toLowerCase() !== globalUserAddress.toLowerCase()) {
+                    displayError("WRONG OWNER", "This NFT is registered to a different wallet address in the Vault ledger.");
+                    return false;
+                }
+                
+                return true; // You own it, proceed!
+            } catch (error) {
+                displayError("LEDGER READ ERROR", error.message);
+                return false;
+            }
         }
 
         async function executeClaim() {
@@ -111,7 +137,10 @@
             try {
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                // THE FIX: Hardcoding 500,000 gas limit to battering-ram past the estimation crash
+                // Run the X-Ray
+                const isOwned = await runLedgerCheck(vaultContract, tokenIdRaw);
+                if (!isOwned) { btn.disabled = false; return; }
+
                 let tx = await vaultContract.claimRewards(BigInt(tokenIdRaw.trim()), { gasLimit: 500000 });
                 
                 errDisplay.style.display = 'block';
@@ -122,8 +151,7 @@
                 errDisplay.innerText = "AERO Rewards successfully claimed!";
                 btn.disabled = false;
             } catch (error) {
-                console.error(error);
-                displayError(error);
+                displayError("TRANSACTION FAILED", error.reason || error.shortMessage || error.message);
                 btn.disabled = false;
             }
         }
@@ -141,7 +169,10 @@
             try {
                 const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
                 
-                // THE FIX: Hardcoding 800,000 gas limit to battering-ram past the estimation crash
+                // Run the X-Ray
+                const isOwned = await runLedgerCheck(vaultContract, tokenIdRaw);
+                if (!isOwned) { btn.disabled = false; return; }
+                
                 let tx = await vaultContract.withdrawPosition(BigInt(tokenIdRaw.trim()), { gasLimit: 800000 });
                 
                 errDisplay.style.display = 'block';
@@ -153,8 +184,7 @@
                 document.getElementById('nft-token-id').value = "";
                 btn.disabled = false;
             } catch (error) {
-                console.error(error);
-                displayError(error);
+                displayError("TRANSACTION FAILED", error.reason || error.shortMessage || error.message);
                 btn.disabled = false;
             }
         }
