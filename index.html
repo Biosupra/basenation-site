@@ -37,7 +37,7 @@
         .vault-btn:hover { filter: brightness(1.1); }
         .vault-btn:disabled { background-color: #555 !important; cursor: not-allowed; }
         
-        /* New buttons for Claiming and Withdrawing */
+        /* Buttons for Claiming and Withdrawing */
         .btn-claim { background-color: #10B981; } /* Green */
         .btn-withdraw { background-color: #EF4444; } /* Red */
         
@@ -128,7 +128,7 @@
 
     <script>
         // LIVE Smart Contract Configuration
-        const VAULT_ADDRESS = "0x62B075413e55DaE33254F625D52C067397ECb5E3";
+        const VAULT_ADDRESS = "0x62B075413e55DaE33254F625D52C067397ECb5E3"; // YOUR NEW VAULT
         const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         const POOL_ADDRESS = "0x3fe04a59ebd38cf06080a6f60a98d124eb59392a"; 
@@ -143,7 +143,6 @@
             "function tickSpacing() external view returns (int24)"
         ];
 
-        // UPDATED: Added claimRewards and withdrawPosition to the ABI!
         const VAULT_ABI = [
             "function depositAndStake(address token0, address token1, uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)",
             "function claimRewards(uint256 tokenId) external",
