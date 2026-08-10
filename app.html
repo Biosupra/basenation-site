@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Basenation | The Foundation</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.11.1/ethers.umd.min.js"></script>
+    <script src="https://unpkg.com/@coinbase/wallet-sdk@4.0.0/dist/index.js"></script>
 
     <style>
         :root { --base-blue: #0052FF; --bg-dark: #0A0B0D; --text-main: #F3F4F6; --text-muted: #9CA3AF; }
@@ -69,6 +70,9 @@
         const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
         const POOL_ADDRESS = "0x3fe04a59ebd38cf06080a6f60a98d124eb59392a";
         
+        // 🚨 IMPORTANT: REPLACE THIS WITH YOUR CDP PAYMASTER URL 🚨
+        const PAYMASTER_URL = "";
+
         const ERC20_ABI = [
             "function approve(address spender, uint256 amount) external returns (bool)"
         ];
@@ -77,7 +81,6 @@
             "function slot0() external view returns (uint160 sqrtPriceX96, int24 tick, uint16 observationIndex, uint16 observationCardinality, uint16 observationCardinalityNext, bool unlocked)"
         ];
 
-        // ADDED: positionOwner, getUserPositions, and depositAndStake to the ABI
         const VAULT_ABI = [
             "function claimRewards(uint256 tokenId) external",
             "function withdrawPosition(uint256 tokenId) external",
@@ -89,30 +92,36 @@
         let userSigner = null;
         let provider = null;
         let globalUserAddress = null;
+        let coinbaseWalletProvider = null;
 
         async function connectWallet() {
-            if (typeof window.ethereum !== 'undefined') {
-                try {
-                    provider = new ethers.BrowserProvider(window.ethereum);
-                    const network = await provider.getNetwork();
-                    if (network.chainId !== BASE_CHAIN_ID) {
-                        await window.ethereum.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_HEX }] });
-                        provider = new ethers.BrowserProvider(window.ethereum);
-                    }
-                    const accounts = await provider.send("eth_requestAccounts", []);
-                    userSigner = await provider.getSigner();
-                    globalUserAddress = accounts[0];
-                    
-                    document.getElementById('connect-section').style.display = 'none';
-                    document.getElementById('deposit-section').style.display = 'block';
-                    document.getElementById('wallet-address-display').innerText = globalUserAddress.substring(0, 6) + "..." + globalUserAddress.substring(globalUserAddress.length - 4);
-                    
-                    await loadUserPositions();
-                } catch (error) {
-                    alert("Connection failed: " + error.message);
+            try {
+                // Initialize Coinbase Wallet SDK for Smart Wallet capabilities
+                const sdk = new CoinbaseWalletSDK({
+                    appName: 'BaseNation',
+                    appLogoUrl: 'https://basenation.org/splash.png',
+                    appChainIds: [8453]
+                });
+                
+                coinbaseWalletProvider = sdk.makeWeb3Provider();
+                provider = new ethers.BrowserProvider(coinbaseWalletProvider);
+                
+                const network = await provider.getNetwork();
+                if (network.chainId !== BASE_CHAIN_ID) {
+                    await coinbaseWalletProvider.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_HEX }] });
                 }
-            } else {
-                alert("No Web3 wallet detected!");
+                
+                const accounts = await coinbaseWalletProvider.request({ method: "eth_requestAccounts" });
+                userSigner = await provider.getSigner();
+                globalUserAddress = accounts[0];
+                
+                document.getElementById('connect-section').style.display = 'none';
+                document.getElementById('deposit-section').style.display = 'block';
+                document.getElementById('wallet-address-display').innerText = globalUserAddress.substring(0, 6) + "..." + globalUserAddress.substring(globalUserAddress.length - 4);
+                
+                await loadUserPositions();
+            } catch (error) {
+                alert("Connection failed: " + error.message);
             }
         }
 
@@ -120,6 +129,46 @@
             const errDisplay = document.getElementById('manage-error-display');
             errDisplay.style.display = 'block';
             errDisplay.innerHTML = `🚨 <b>${title}</b><br><br>${message}`;
+        }
+
+        // =====================================
+        // SMART WALLET BATCH SENDER (EIP-5792)
+        // =====================================
+        async function sendSponsoredTx(calls, errDisplay) {
+            const capabilities = {};
+            if (PAYMASTER_URL && PAYMASTER_URL.trim() !== "") {
+                capabilities.paymasterService = { url: PAYMASTER_URL.trim() };
+            }
+            
+            errDisplay.innerText = "Confirm transaction in your wallet (Gas Sponsored!)...";
+            
+            // Send calls via Coinbase Smart Wallet SDK
+            const bundleId = await coinbaseWalletProvider.request({
+                method: 'wallet_sendCalls',
+                params: [{
+                    version: '1.0',
+                    chainId: BASE_CHAIN_HEX,
+                    from: globalUserAddress,
+                    calls: calls,
+                    capabilities: capabilities
+                }]
+            });
+            
+            errDisplay.innerText = "Transaction submitted! Waiting for network confirmation...";
+            
+            // Poll for status
+            while (true) {
+                await new Promise(r => setTimeout(r, 2000));
+                const status = await coinbaseWalletProvider.request({
+                    method: 'wallet_getCallsStatus',
+                    params: [bundleId]
+                });
+                if (status.status === 'CONFIRMED') {
+                    return status.receipts[0].transactionHash;
+                } else if (status.status === 'FAILED') {
+                    throw new Error("Transaction failed on-chain.");
+                }
+            }
         }
 
         // =====================================
@@ -139,7 +188,7 @@
                     return false;
                 }
                 
-                return true; // You own it, proceed!
+                return true; 
             } catch (error) {
                 displayError("LEDGER READ ERROR", error.message);
                 return false;
@@ -212,41 +261,46 @@
                 const wethWei = ethers.parseUnits(wethTokens.toFixed(18), 18);
                 const usdcMwei = ethers.parseUnits(usdcTokens.toFixed(6), 6);
 
-                const wethContract = new ethers.Contract(WETH_ADDRESS, ERC20_ABI, userSigner);
-                const usdcContract = new ethers.Contract(USDC_ADDRESS, ERC20_ABI, userSigner);
-
-                errDisplay.innerText = "Step 2: Approving WETH...";
-                const wethTx = await wethContract.approve(VAULT_ADDRESS, wethWei);
-                await wethTx.wait();
-
-                errDisplay.innerText = "Step 3: Approving USDC...";
-                const usdcTx = await usdcContract.approve(VAULT_ADDRESS, usdcMwei);
-                await usdcTx.wait();
-
-                errDisplay.innerText = "Step 4: Depositing & Staking to Vault...";
-                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
-                
-                // Set tick range +/- 150 ticks (~1.5% range, rounded to nearest tick spacing 50)
                 let tickLower = currentTick - (currentTick % 50) - 150;
                 let tickUpper = currentTick - (currentTick % 50) + 150;
 
-                const depositTx = await vaultContract.depositAndStake(
-                    wethWei, usdcMwei, 0n, 0n, 50n, BigInt(tickLower), BigInt(tickUpper)
-                );
-                
-                errDisplay.innerText = "Deposit TX sent! Hash: " + depositTx.hash;
-                await depositTx.wait();
+                errDisplay.innerText = "Step 2: Preparing batch transaction (Approve + Deposit)...";
+
+                const erc20Iface = new ethers.Interface(ERC20_ABI);
+                const vaultIface = new ethers.Interface(VAULT_ABI);
+
+                // Build EIP-5792 calls array
+                const calls = [];
+                if (wethWei > 0n) {
+                    calls.push({
+                        to: WETH_ADDRESS,
+                        data: erc20Iface.encodeFunctionData("approve", [VAULT_ADDRESS, wethWei])
+                    });
+                }
+                if (usdcMwei > 0n) {
+                    calls.push({
+                        to: USDC_ADDRESS,
+                        data: erc20Iface.encodeFunctionData("approve", [VAULT_ADDRESS, usdcMwei])
+                    });
+                }
+                calls.push({
+                    to: VAULT_ADDRESS,
+                    data: vaultIface.encodeFunctionData("depositAndStake", [
+                        wethWei, usdcMwei, 0n, 0n, 50n, BigInt(tickLower), BigInt(tickUpper)
+                    ])
+                });
+
+                const txHash = await sendSponsoredTx(calls, errDisplay);
 
                 errDisplay.style.color = '#10B981';
-                errDisplay.innerText = "Deposit successful! Loading your new position...";
+                errDisplay.innerText = "Deposit successful! Hash: " + txHash + "\\nLoading your new position...";
                 document.getElementById('deposit-weth-usd').value = "";
                 document.getElementById('deposit-usdc-usd').value = "";
                 await loadUserPositions();
                 btn.disabled = false;
             } catch (error) {
                 console.error(error);
-                let stepStr = errDisplay.innerText.includes("Step") ? errDisplay.innerText.split(":")[0] : "TX FAILED";
-                displayError("DEPOSIT FAILED (" + stepStr + ")", error.reason || error.shortMessage || error.message);
+                displayError("DEPOSIT FAILED", error.reason || error.shortMessage || error.message);
                 btn.disabled = false;
             }
         }
@@ -261,23 +315,26 @@
             errDisplay.style.display = 'none';
 
             try {
-                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
-                
-                // Run the X-Ray
+                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, provider);
                 const isOwned = await runLedgerCheck(vaultContract, tokenIdRaw);
                 if (!isOwned) { btn.disabled = false; return; }
 
-                let tx = await vaultContract.claimRewards(BigInt(tokenIdRaw.trim()), { gasLimit: 500000 });
-                
                 errDisplay.style.display = 'block';
-                errDisplay.style.color = '#10B981';
-                errDisplay.innerText = "Tx sent! Waiting for confirmation... Hash: " + tx.hash;
-                await tx.wait();
+                errDisplay.style.color = 'var(--text-main)';
+
+                const vaultIface = new ethers.Interface(VAULT_ABI);
+                const calls = [{
+                    to: VAULT_ADDRESS,
+                    data: vaultIface.encodeFunctionData("claimRewards", [BigInt(tokenIdRaw.trim())])
+                }];
+
+                const txHash = await sendSponsoredTx(calls, errDisplay);
                 
-                errDisplay.innerText = "AERO Rewards successfully claimed!";
+                errDisplay.style.color = '#10B981';
+                errDisplay.innerText = "AERO Rewards successfully claimed! Hash: " + txHash;
                 btn.disabled = false;
             } catch (error) {
-                displayError("TRANSACTION FAILED", error.reason || error.shortMessage || error.message);
+                displayError("CLAIM FAILED", error.reason || error.shortMessage || error.message);
                 btn.disabled = false;
             }
         }
@@ -292,25 +349,27 @@
             errDisplay.style.display = 'none';
 
             try {
-                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, userSigner);
-                
-                // Run the X-Ray
+                const vaultContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, provider);
                 const isOwned = await runLedgerCheck(vaultContract, tokenIdRaw);
                 if (!isOwned) { btn.disabled = false; return; }
                 
-                let tx = await vaultContract.withdrawPosition(BigInt(tokenIdRaw.trim()), { gasLimit: 800000 });
-                
                 errDisplay.style.display = 'block';
-                errDisplay.style.color = '#10B981';
-                errDisplay.innerText = "Tx sent! Waiting for confirmation... Hash: " + tx.hash;
-                await tx.wait();
+                errDisplay.style.color = 'var(--text-main)';
+
+                const vaultIface = new ethers.Interface(VAULT_ABI);
+                const calls = [{
+                    to: VAULT_ADDRESS,
+                    data: vaultIface.encodeFunctionData("withdrawPosition", [BigInt(tokenIdRaw.trim())])
+                }];
+
+                const txHash = await sendSponsoredTx(calls, errDisplay);
                 
-                errDisplay.innerText = "Position Withdrawn! The NFT is back in your wallet.";
-                // Refresh positions
+                errDisplay.style.color = '#10B981';
+                errDisplay.innerText = "Position Withdrawn! The NFT is back in your wallet. Hash: " + txHash;
                 await loadUserPositions();
                 btn.disabled = false;
             } catch (error) {
-                displayError("TRANSACTION FAILED", error.reason || error.shortMessage || error.message);
+                displayError("WITHDRAW FAILED", error.reason || error.shortMessage || error.message);
                 btn.disabled = false;
             }
         }
