@@ -96,14 +96,18 @@
 
         async function connectWallet() {
             try {
-                // Initialize Coinbase Wallet SDK for Smart Wallet capabilities
-                const sdk = new CoinbaseWalletSDK({
-                    appName: 'BaseNation',
-                    appLogoUrl: 'https://basenation.org/splash.png',
-                    appChainIds: [8453]
-                });
-                
-                coinbaseWalletProvider = sdk.makeWeb3Provider();
+                // Check if we are already inside a Dapp browser (like Coinbase Wallet app)
+                if (typeof window.ethereum !== 'undefined') {
+                    coinbaseWalletProvider = window.ethereum;
+                } else {
+                    // Fallback: Initialize Coinbase Smart Wallet SDK for standard browsers
+                    const sdk = new CoinbaseWalletSDK({
+                        appName: 'BaseNation',
+                        appLogoUrl: 'https://basenation.org/splash.png',
+                        appChainIds: [8453]
+                    });
+                    coinbaseWalletProvider = sdk.makeWeb3Provider();
+                }
                 provider = new ethers.BrowserProvider(coinbaseWalletProvider);
                 
                 const network = await provider.getNetwork();
