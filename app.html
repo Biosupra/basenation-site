@@ -39,7 +39,7 @@
                 <p id="wallet-address-display" style="color: var(--base-blue); font-size: 15px; text-align: center; font-weight: bold; margin-top: 0;"></p>
                 
                 <hr style="border-color: rgba(255,255,255,0.1); margin: 30px 0;">
-                <h3 style="text-align: center; margin-bottom: 5px;">Deposit to Vault</h3>
+                <h2 style="text-align: center; margin-bottom: 20px;">Manage Vault (v3)</h2>
                 <p style="font-size: 13px; color: var(--text-muted); text-align: center; margin-top: 0;">Enter USD value for each token.</p>
                 <div style="display: flex; gap: 10px; justify-content: center; margin-bottom: 5px;">
                     <input type="number" id="deposit-weth-usd" class="vault-input" placeholder="$ WETH" step="1">
@@ -61,7 +61,7 @@
     </div>
 
     <script>
-        const VAULT_ADDRESS = "0xd25785481B4106C286d90799814D63FE2a8159B4";
+        const VAULT_ADDRESS = "0x6F365C00f7c9736f46fF5fDeb839d5111aA6C844";
         const BASE_CHAIN_ID = 8453n;
         const BASE_CHAIN_HEX = '0x2105'; 
         
@@ -244,7 +244,9 @@
                 await loadUserPositions();
                 btn.disabled = false;
             } catch (error) {
-                displayError("DEPOSIT FAILED", error.reason || error.shortMessage || error.message);
+                console.error(error);
+                let stepStr = errDisplay.innerText.includes("Step") ? errDisplay.innerText.split(":")[0] : "TX FAILED";
+                displayError("DEPOSIT FAILED (" + stepStr + ")", error.reason || error.shortMessage || error.message);
                 btn.disabled = false;
             }
         }
