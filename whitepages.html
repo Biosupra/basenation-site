@@ -96,31 +96,35 @@
     <a href="index.html" class="back-link">&larr; Back to Home</a>
     
     <h1>Base Nation</h1>
-    <p class="subtitle">Official Documentation &amp; Whitepaper</p>
+    <p class="subtitle">Automated Liquidity Manager (ALM) Whitepaper</p>
 
     <h2>1. Introduction to Base Nation</h2>
-    <p>Base Nation is an open, decentralized consumer investing platform built specifically on the Base network. Inspired by the necessity to streamline decentralized finance (DeFi), Base Nation natively leverages the robust liquidity architecture of the Aerodrome protocol. The platform's intuitive design ensures a frictionless user experience, serving as an accessible gateway to advanced onchain financial tools without the bewildering complexity traditionally associated with Web3 applications.</p>
+    <p>Base Nation is an open, decentralized Automated Liquidity Manager (ALM) built specifically for the Base network. Inspired by the necessity to streamline decentralized finance (DeFi), Base Nation natively leverages the advanced concentrated liquidity architecture of Aerodrome Slipstream. The platform's smart contracts and off-chain keeper network ensure a frictionless user experience, serving as an accessible gateway to advanced yield generation without the complexity traditionally associated with active liquidity management.</p>
 
     <h2>2. Our Mission</h2>
-    <p>Onchain financial mechanisms have the transformative power to empower individuals, serving as stepping stones to entirely new economic opportunities. However, they are frequently buried beneath complex user interfaces, fragmented ecosystems, and opaque smart contract logic. We are here to rewrite this narrative.</p>
-    <p>Our overarching mission is to empower everyone, everywhere. In just a few seamless interactions on Base Nation, users can effortlessly deposit assets, manage their investments, and generate yield, while retaining total transparency over their digital portfolios. By fostering universal accessibility and prioritizing simplified workflows, Base Nation aims to increase economic freedom for a truly global audience.</p>
+    <p>Concentrated liquidity provides incredible capital efficiency, but it requires constant, vigilant management to ensure positions do not fall "out of range." For the average retail user, monitoring tick boundaries and actively rebalancing positions is unrealistic. We are here to rewrite this narrative.</p>
+    <p>Our overarching mission is to empower everyone, everywhere. In just a few seamless interactions on Base Nation, users can effortlessly deposit WETH and USDC, delegating the complex, gas-intensive work of active liquidity rebalancing to our automated keeper network. By fostering universal accessibility and prioritizing simplified workflows, Base Nation aims to democratize access to institutional-grade DeFi yields.</p>
 
     <h2>3. Platform Architecture</h2>
-    <p>The technical foundation of Base Nation emphasizes unmatched security, performance, and modernity. The platform's backend and web architecture are engineered using Rust, recognized universally for its memory safety guarantees, advanced concurrency models, and blistering speed. Unique to the Base Nation development cycle, the underlying codebase, smart contract parameters, and visual infrastructure were meticulously synthesized using next-generation AI pipelines.</p>
+    <p>The technical foundation of Base Nation emphasizes unmatched security, performance, and automation. The platform consists of two primary layers: the on-chain Smart Vault and the off-chain Rust Keeper Bot.</p>
     
-    <h3>Aerodrome Integration</h3>
-    <p>At the core of Base Nation's yield optimization strategy lies deep integration with the Aerodrome protocol. By interacting natively with Aerodrome liquidity pools on the Base network, Base Nation ensures deep liquidity access, minimized transaction slippage, and optimal yield generation tailored for everyday consumer deposits.</p>
+    <h3>Aerodrome Slipstream Integration</h3>
+    <p>At the core of Base Nation's yield optimization strategy is a deep integration with the Aerodrome Slipstream protocol. The Vault creates highly concentrated, ultra-narrow liquidity positions in Aerodrome pools to maximize trading fee capture per dollar deposited. Because these narrow ranges easily fall out of bounds during market movements, the architecture relies heavily on our keeper automation to shift the liquidity to the active price tick.</p>
 
     <h2>4. Vault Smart Contract Mechanics</h2>
-    <p>Asset management is strictly governed by the proprietary Base Nation Vault Smart Contract. This architecture guarantees that funds remain highly secure, strictly adhering to programmatic, immutable rules that eliminate centralized failure points.</p>
+    <p>Asset management is strictly governed by the proprietary Base Nation Vault Smart Contract (`BaseNationVault.sol`). This architecture guarantees that funds remain highly secure, adhering to programmatic, immutable rules.</p>
     
-    <h3>Anti-Sandwich Deposit Lock</h3>
-    <p>Front-running and Maximal Extractable Value (MEV) attacks remain substantial threats in decentralized finance. Base Nation introduces an innovative Anti-Sandwich Deposit Lock mechanism. This robust feature imposes a calculated time-lock and state validation check upon every user deposit, effectively neutralizing the ability of malicious actors to artificially manipulate routing paths or extract value from retail deposits via sandwich attacks.</p>
+    <h3>Non-Custodial ERC721 Integration</h3>
+    <p>Unlike traditional vaults that pool all user funds into a single contract-owned liquidity position (creating accounting complexities), the Base Nation Vault mints individual Aerodrome Slipstream NFTs directly to the user's wallet. The Vault acts as a highly optimized router and manager. The user retains sole ownership of their NFT position at all times, making the platform fully non-custodial.</p>
 
     <h3>Proportional Withdrawal Logic</h3>
-    <p>To perpetually guarantee long-term protocol health and systemic solvency, all withdrawal operations are executed strictly via Proportional Withdrawal Logic. Rather than fulfilling static token amounts that could instigate liquidity imbalances, users withdraw an exact proportional share of the vault's total underlying assets. This ensures the vault remains fully backed at all times, equitably protecting all depositors during extreme market volatility.</p>
+    <p>When a user initiates a withdrawal, the Vault automatically burns the underlying Aerodrome NFT, harvests all accumulated trading fees, and returns the exact proportional share of WETH and USDC directly to the user's wallet. There are no exit fees, and the user's principal and rewards are immediately settled.</p>
 
-    <h2>5. Security &amp; Trust</h2>
+    <h2>5. The Rust Keeper Network</h2>
+    <p>To perpetually guarantee optimal capital efficiency, Base Nation operates an off-chain network of Keeper Bots written in Rust. These bots monitor the Aerodrome pool state block-by-block.</p>
+    <p>When the active market price moves outside of a user's concentrated liquidity bounds, the Keeper Bot detects the "out of range" status. It immediately triggers the `rebalance()` function on the Vault. The Vault then automatically withdraws the old liquidity, recalculates the current tick, and redeploys the assets into a new, perfectly centered narrow range. This automated shifting ensures that user liquidity is always actively earning fees, without any manual intervention from the user.</p>
+
+    <h2>6. Security &amp; Trust</h2>
     <p>Unwavering security is the cornerstone of the Base Nation philosophy. Comprehensive measures are implemented across the protocol stack to safeguard the community's assets, allowing users to invest with absolute peace of mind.</p>
 
     <table>
@@ -132,23 +136,19 @@
       </thead>
       <tbody>
         <tr>
-          <td><strong>Administrative Failsafes</strong></td>
-          <td>Embedded operational circuit breakers designed to pause non-critical contract interactions during emergency scenarios, while strictly preserving user withdrawal rights.</td>
+          <td><strong>Non-Custodial Design</strong></td>
+          <td>The operators have absolutely no access to user funds. NFT positions are minted directly to the depositor's wallet, ensuring that only the user can authorize withdrawals.</td>
         </tr>
         <tr>
-          <td><strong>Basescan Verification</strong></td>
-          <td>Commitment to absolute transparency; all smart contract code is fully verified, auditable, and actively monitored via Basescan.org.</td>
+          <td><strong>Permissionless Rebalancing</strong></td>
+          <td>While the Rust Keeper Bot automates the process, the `rebalance()` function is entirely permissionless. In the event the official bot goes offline, any user or third party can call the function to re-center the liquidity.</td>
         </tr>
         <tr>
-          <td><strong>Memory-Safe Infrastructure</strong></td>
-          <td>The platform backend is fortified by Rust's strict compiler constraints, systematically mitigating traditional vulnerabilities such as buffer overflows or data races.</td>
+          <td><strong>Strict State Validation</strong></td>
+          <td>The Vault uses exact `msg.sender` validation and Aerodrome `NonfungiblePositionManager` verifications to ensure that only the rightful owner of a position can withdraw or modify it.</td>
         </tr>
       </tbody>
     </table>
-
-    <h2>6. Interactive User Experience</h2>
-    <p>Onchain applications must transcend basic transactional utility; they must actively guide and educate the user. Base Nation pioneers a next-generation interactive user experience by embedding a responsive Conversational Chat Interface directly into the core website architecture.</p>
-    <p>This dynamic interface provides immediate, on-demand user updates, translates complex technical operations in real-time, and assists comprehensively with portfolio tracking. Whether querying the live status of an Aerodrome liquidity pool or seeking clarification on the vault's proportional logic, the integrated conversational assistant ensures that users are fully supported at every step of their onchain journey.</p>
 
   </div>
 
