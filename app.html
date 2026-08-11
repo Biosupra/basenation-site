@@ -8,17 +8,27 @@
     <script src="https://unpkg.com/@coinbase/wallet-sdk@4.0.0/dist/index.js"></script>
 
     <style>
-        :root { --base-blue: #0052FF; --bg-dark: #0A0B0D; --text-main: #F3F4F6; --text-muted: #9CA3AF; }
+        :root { --base-blue: #0052FF; --aero-red: #E1143D; --bg-dark: #0F1115; --text-main: #E5E7EB; --text-muted: #9CA3AF; }
         body { margin: 0; font-family: -apple-system, sans-serif; background-color: var(--bg-dark); color: var(--text-main); line-height: 1.6; }
+        
+        /* Dropdown */
+        nav.dropdown { position: absolute; top: 20px; left: 20px; display: inline-block; z-index: 1000; }
+        .dropbtn { background-color: var(--base-blue); color: var(--text-main); padding: 10px 20px; font-size: 16px; border: none; cursor: pointer; border-radius: 4px; }
+        .dropdown-content { display: none; position: absolute; background-color: var(--bg-dark); min-width: 160px; box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.5); border: 1px solid var(--text-muted); border-radius: 4px; overflow: hidden; }
+        .dropdown-content a { color: var(--text-main); padding: 12px 16px; text-decoration: none; display: block; }
+        .dropdown-content a:hover { background-color: var(--base-blue); }
+        .dropdown:hover .dropdown-content { display: block; }
+        .dropdown:hover .dropbtn { filter: brightness(0.85); }
+
         .container { max-width: 900px; margin: 0 auto; padding: 4rem 2rem; text-align: center; }
-        header { padding-top: 2vh; margin-bottom: 2rem; }
+        header { padding-top: 60px; margin-bottom: 2rem; }
         h1 { font-size: 3rem; margin: 0 0 1rem 0; letter-spacing: -0.05em; }
         .highlight { color: var(--base-blue); }
         .vault-container { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 12px; padding: 2rem; max-width: 500px; margin: 0 auto; text-align: left; }
         .vault-input { width: 95%; padding: 12px; margin: 5px 0 5px 0; border-radius: 6px; border: 1px solid #333; background: #1A1C20; color: white; font-size: 16px; }
         .vault-btn { width: 100%; padding: 15px; background-color: var(--base-blue); color: white; font-size: 18px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px; transition: 0.2s; }
-        .btn-claim { background-color: #10B981; } 
-        .btn-withdraw { background-color: #EF4444; } 
+        .btn-claim { background-color: var(--base-blue); } 
+        .btn-withdraw { background-color: var(--aero-red); } 
 
         /* ToS Modal Styles */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
@@ -31,10 +41,20 @@
     </style>
 </head>
 <body>
+    <nav class="dropdown">
+        <button class="dropbtn">Menu</button>
+        <div class="dropdown-content">
+            <a href="index.html">Home Page</a>
+            <a href="mission.html">Our Mission</a>
+            <a href="whitepages.html">Whitepages</a>
+            <a href="tos.html">Terms of Service</a>
+        </div>
+    </nav>
+
     <div class="container">
         <header>
-            <h1>Base<span class="highlight">_Nation</span> App</h1>
-            <p style="color: var(--text-muted);">Ledger X-Ray V5</p>
+            <img src="logo.png" alt="Base Nation Logo" style="max-width: 300px; width: 100%; height: auto; margin: 0 auto; display: block; filter: drop-shadow(0px 10px 20px rgba(0, 82, 255, 0.15));">
+            <p style="color: var(--text-muted); margin-top: 15px;">Ledger X-Ray V5</p>
         </header>
 
         <section class="vault-container">

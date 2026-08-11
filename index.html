@@ -14,8 +14,9 @@
     <style>
         :root {
             --base-blue: #0052FF;
-            --bg-dark: #0A0B0D;
-            --text-main: #F3F4F6;
+            --aero-red: #E1143D;
+            --bg-dark: #0F1115;
+            --text-main: #E5E7EB;
             --text-muted: #9CA3AF;
         }
         body { margin: 0; font-family: -apple-system, sans-serif; background-color: var(--bg-dark); color: var(--text-main); line-height: 1.6; }
@@ -27,7 +28,7 @@
         .dropdown:hover .dropdown-content { display: block; }
         .dropdown:hover .dropbtn { filter: brightness(0.85); }
         .container { max-width: 900px; margin: 0 auto; padding: 4rem 2rem; text-align: center; }
-        header { padding-top: 5vh; margin-bottom: 3rem; }
+        header { padding-top: 60px; margin-bottom: 3rem; }
         h1 { font-size: 4rem; margin: 0 0 1rem 0; letter-spacing: -0.05em; }
         .highlight { color: var(--base-blue); }
         .subtitle { font-size: 1.5rem; color: var(--text-muted); max-width: 600px; margin: 0 auto; }
@@ -38,8 +39,8 @@
         .vault-btn:disabled { background-color: #555 !important; cursor: not-allowed; }
         
         /* Buttons for Claiming and Withdrawing */
-        .btn-claim { background-color: #10B981; } /* Green */
-        .btn-withdraw { background-color: #EF4444; } /* Red */
+        .btn-claim { background-color: var(--base-blue); } 
+        .btn-withdraw { background-color: var(--aero-red); } 
         
         .risk-selector { display: flex; gap: 10px; margin: 10px 0; }
         .risk-btn { flex: 1; padding: 10px; background: #1A1C20; border: 1px solid #333; color: var(--text-muted); cursor: pointer; border-radius: 6px; }
@@ -63,8 +64,8 @@
 
     <div class="container">
         <header>
-            <h1>Base<span class="highlight">_Nation</span></h1>
-            <p class="subtitle">The hub is currently under construction. A new platform for the ecosystem is deploying soon.</p>
+            <img src="logo.png" alt="Base Nation Logo" style="max-width: 400px; width: 100%; height: auto; margin: 0 auto; display: block; filter: drop-shadow(0px 10px 20px rgba(0, 82, 255, 0.15));">
+            <p class="subtitle" style="margin-top: 1.5rem;">The hub is currently under construction. A new platform for the ecosystem is deploying soon.</p>
         </header>
 
         <section class="vault-container" style="padding: 0; background: transparent; border: none; overflow: hidden; box-shadow: none;">
