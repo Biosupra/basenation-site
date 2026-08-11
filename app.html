@@ -19,6 +19,15 @@
         .vault-btn { width: 100%; padding: 15px; background-color: var(--base-blue); color: white; font-size: 18px; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; margin-top: 15px; transition: 0.2s; }
         .btn-claim { background-color: #10B981; } 
         .btn-withdraw { background-color: #EF4444; } 
+
+        /* ToS Modal Styles */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(5px); z-index: 1000; justify-content: center; align-items: center; }
+        .modal-content { background: #121418; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; padding: 2.5rem; max-width: 450px; text-align: left; }
+        .modal-title { font-size: 1.5rem; margin-top: 0; margin-bottom: 1rem; color: white; }
+        .modal-text { color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem; line-height: 1.5; }
+        .modal-checkbox-container { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 1.5rem; background: rgba(255,255,255,0.02); padding: 15px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.05); }
+        .modal-checkbox-container input { margin-top: 4px; accent-color: var(--base-blue); width: 16px; height: 16px; cursor: pointer; }
+        .modal-checkbox-container label { font-size: 14px; color: white; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -61,6 +70,23 @@
         </section>
     </div>
 
+    <!-- ToS Modal -->
+    <div id="tos-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 class="modal-title">Terms of Service</h2>
+            <div class="modal-text">
+                By connecting your wallet, you agree to the BaseNation Terms of Service. This is a non-custodial decentralized platform. The operators have no control over your funds and accept no liability for any losses, smart contract bugs, or market volatility.<br><br>
+                Furthermore, you must certify that you are not a U.S. person.
+            </div>
+            <div class="modal-checkbox-container">
+                <input type="checkbox" id="tos-checkbox" onchange="toggleAcceptButton()">
+                <label for="tos-checkbox">I confirm I am not a U.S. citizen or resident, and I accept the Terms of Service.</label>
+            </div>
+            <button class="vault-btn" id="accept-tos-btn" onclick="acceptTosAndConnect()" disabled style="opacity: 0.5; cursor: not-allowed; margin-top: 0;">Accept & Connect</button>
+            <button class="vault-btn" onclick="closeTosModal()" style="background-color: transparent; border: 1px solid #333; margin-top: 10px; color: var(--text-muted);">Decline</button>
+        </div>
+    </div>
+
     <script>
         const VAULT_ADDRESS = "0x623Cef80f15eE6FF68F7E82cc92adC90Ce9AD97D";
         const BASE_CHAIN_ID = 8453n;
@@ -94,7 +120,45 @@
         let globalUserAddress = null;
         let coinbaseWalletProvider = null;
 
-        async function connectWallet() {
+        function showTosModal() {
+            document.getElementById('tos-modal').style.display = 'flex';
+        }
+
+        function closeTosModal() {
+            document.getElementById('tos-modal').style.display = 'none';
+        }
+
+        function toggleAcceptButton() {
+            const checkbox = document.getElementById('tos-checkbox');
+            const btn = document.getElementById('accept-tos-btn');
+            if (checkbox.checked) {
+                btn.disabled = false;
+                btn.style.opacity = '1';
+                btn.style.cursor = 'pointer';
+            } else {
+                btn.disabled = true;
+                btn.style.opacity = '0.5';
+                btn.style.cursor = 'not-allowed';
+            }
+        }
+
+        function acceptTosAndConnect() {
+            if (document.getElementById('tos-checkbox').checked) {
+                localStorage.setItem('tos_accepted', 'true');
+                closeTosModal();
+                executeWalletConnection();
+            }
+        }
+
+        function connectWallet() {
+            if (localStorage.getItem('tos_accepted') === 'true') {
+                executeWalletConnection();
+            } else {
+                showTosModal();
+            }
+        }
+
+        async function executeWalletConnection() {
             try {
                 // Check if we are already inside a Dapp browser (like Coinbase Wallet app)
                 if (typeof window.ethereum !== 'undefined') {
