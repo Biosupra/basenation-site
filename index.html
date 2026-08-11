@@ -122,14 +122,39 @@
         <section class="features">
             <div class="feature-card">
                 <h3>About Us</h3>
-                <p> Hi im panda & My wife Autumn, We are building Base_Nation A place for everyone and anything Base   We plan on launching a community token As well as offering usdc / base nation staking into our custom build liquidity pool manager bots <-- battle tested over this last few months Stay Tuned, its time to turn these trenches into Mountains!</p>
+                <p>Hi, I'm Panda & my wife Autumn. We are building Base_Nation, an Automated Liquidity Manager built exclusively for the Base ecosystem. Our mission is to make advanced DeFi yield generation simple and accessible for everyday users by automating concentrated liquidity management.</p>
             </div>
             
             <div class="feature-card">
-                <h3>Next Steps</h3>
-                <p>Please Stay Tuned (b20 Token drop ( To Be announced ) ) Usdc / Base Nation Token Staking For Apy of Custom built Liquidity bot managers ( To Be Announced ) check out our X Account 
+                <h3>Development Update</h3>
+                <p>We are making incredible progress! We have successfully completed backend testing of our Smart Vaults, and our off-chain Rust Keeper bot is now fully deployed and hosted on robust cloud infrastructure. Currently, we are pursuing the formation of our LLC to ensure we have a solid legal and regulatory foundation before our official launch. Check out our X Account: 
                    <a href="https://x.com/Base__Nation?s=20" target="_blank" style="color: var(--base-blue); text-decoration: underline;">https://x.com/Base__Nation</a>
                 </p>
+            </div>
+        </section>
+
+        <!-- Countdown Timer Section -->
+        <section style="margin-top: 3rem; text-align: center; background: rgba(0, 82, 255, 0.05); padding: 2rem; border-radius: 12px; border: 1px solid rgba(0, 82, 255, 0.2);">
+            <h3 style="color: var(--base-blue); margin-top: 0;">Beta Launch Countdown</h3>
+            <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 1.5rem;">Targeting <strong>September 1st, 2026</strong>. The beta launch will be restricted to a limited number of users (amount TBD).</p>
+            
+            <div id="countdown-timer" style="display: flex; justify-content: center; gap: 15px; font-size: 2rem; font-weight: bold; color: white;">
+                <div style="display: flex; flex-direction: column; align-items: center; background: #1A1C20; padding: 10px 20px; border-radius: 8px; border: 1px solid #333; min-width: 60px;">
+                    <span id="days">00</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal; text-transform: uppercase;">Days</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; background: #1A1C20; padding: 10px 20px; border-radius: 8px; border: 1px solid #333; min-width: 60px;">
+                    <span id="hours">00</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal; text-transform: uppercase;">Hours</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; background: #1A1C20; padding: 10px 20px; border-radius: 8px; border: 1px solid #333; min-width: 60px;">
+                    <span id="minutes">00</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal; text-transform: uppercase;">Mins</span>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; background: #1A1C20; padding: 10px 20px; border-radius: 8px; border: 1px solid #333; min-width: 60px;">
+                    <span id="seconds">00</span>
+                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal; text-transform: uppercase;">Secs</span>
+                </div>
             </div>
         </section>
     </div>
@@ -386,6 +411,28 @@
                 btn.disabled = false;
             }
         }
+    </script>
+    <script>
+        // Set the date we're counting down to (September 1, 2026 00:00:00 UTC)
+        const countDownDate = new Date("Sep 1, 2026 00:00:00 UTC").getTime();
+
+        const x = setInterval(function() {
+            const now = new Date().getTime();
+            const distance = countDownDate - now;
+
+            if (distance < 0) {
+                clearInterval(x);
+                document.getElementById("days").innerHTML = "00";
+                document.getElementById("hours").innerHTML = "00";
+                document.getElementById("minutes").innerHTML = "00";
+                document.getElementById("seconds").innerHTML = "00";
+            } else {
+                document.getElementById("days").innerHTML = Math.floor(distance / (1000 * 60 * 60 * 24)).toString().padStart(2, '0');
+                document.getElementById("hours").innerHTML = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)).toString().padStart(2, '0');
+                document.getElementById("minutes").innerHTML = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60)).toString().padStart(2, '0');
+                document.getElementById("seconds").innerHTML = Math.floor((distance % (1000 * 60)) / 1000).toString().padStart(2, '0');
+            }
+        }, 1000);
     </script>
 </body>
 </html>
