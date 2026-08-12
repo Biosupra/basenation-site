@@ -378,8 +378,10 @@
                 for (let i = 0; i < positions.length; i++) {
                     const tokenId = positions[i];
                     try {
-                        const unclaimed = await gaugeContract.earned(globalUserAddress, tokenId);
-                        totalUnclaimed += unclaimed;
+                        const unclaimed = await gaugeContract.earned(VAULT_ADDRESS, tokenId);
+                        // Vault takes 20% protocol fee, user gets 80%
+                        const userShare = (unclaimed * 80n) / 100n;
+                        totalUnclaimed += userShare;
                     } catch(e) {
                         console.error("Failed to fetch unclaimed for token " + tokenId, e);
                     }
