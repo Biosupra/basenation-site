@@ -127,15 +127,11 @@ export default function VaultDashboard() {
 
           // Fetch APY
           try {
-              const query = { query: `{ gauges(where: {id: "0xa0b61fdb9f1fb9b917fe38b49427fd4d87472d28"}) { apy } }` };
-              const response = await fetch("https://api.studio.thegraph.com/query/50802/aerodrome-base-mainnet/version/latest", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(query)
-              });
+              const response = await fetch("https://yields.llama.fi/chart/1328ac9d-9939-4719-a85a-114935209e08");
               const result = await response.json();
-              if (result.data && result.data.gauges && result.data.gauges.length > 0) {
-                  const apy = parseFloat(result.data.gauges[0].apy);
+              if (result && result.data && result.data.length > 0) {
+                  const latestData = result.data[result.data.length - 1];
+                  const apy = parseFloat(latestData.apy);
                   if (apy > 0) setStats(prev => ({ ...prev, apy: apy.toFixed(2) + "%" }));
               }
           } catch (e) {
@@ -148,14 +144,23 @@ export default function VaultDashboard() {
               const vaultEventContract = new Contract(VAULT_ADDRESS, VAULT_ABI, cdpProvider);
               const checksumAddress = ethers.getAddress(userAddress);
               const filter = vaultEventContract.filters.RewardsClaimed(checksumAddress);
-              const latestBlock = await cdpProvider.getBlockNumber();
-              const events = await vaultEventContract.queryFilter(filter, 18000000, latestBlock);
+              
               let totalClaimed = BigInt(0);
-              for (const event of events) {
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  totalClaimed += (event as any).args[1];
+              const latestBlock = await cdpProvider.getBlockNumber();
+              let fromBlock = 49813356;
+              const step = 9999;
+              
+              while (fromBlock <= latestBlock) {
+                  let toBlock = fromBlock + step;
+                  if (toBlock > latestBlock) toBlock = latestBlock;
+                  const events = await vaultEventContract.queryFilter(filter, fromBlock, toBlock);
+                  for (const event of events) {
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      totalClaimed += (event as any).args[1];
+                  }
+                  fromBlock = toBlock + 1;
               }
-              setStats(prev => ({ ...prev, lifetime: parseFloat(formatEther(totalClaimed)).toFixed(6) }));
+              setStats(prev => ({ ...prev, lifetime: parseFloat(formatEther(totalClaimed)).toFixed(4) }));
           } catch (e) {
               console.error("Failed to fetch lifetime", e);
           }
@@ -174,7 +179,7 @@ export default function VaultDashboard() {
                   console.error("Failed to fetch unclaimed for " + tokenId, e);
               }
           }
-          setStats(prev => ({ ...prev, unclaimed: parseFloat(formatEther(totalUnclaimed)).toFixed(6) }));
+          setStats(prev => ({ ...prev, unclaimed: parseFloat(formatEther(totalUnclaimed)).toFixed(4) }));
 
       } catch (error) {
           console.error(error);
