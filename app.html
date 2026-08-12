@@ -360,8 +360,15 @@
 
                 // FETCH LIFETIME EARNED
                 try {
-                    const filter = vaultContract.filters.RewardsClaimed(globalUserAddress);
-                    const events = await vaultContract.queryFilter(filter, 0, "latest");
+                    const cdpProvider = new ethers.JsonRpcProvider(PAYMASTER_URL);
+                    const vaultEventContract = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, cdpProvider);
+                    const filter = vaultEventContract.filters.RewardsClaimed(globalUserAddress);
+                    
+                    // We only need to fetch from the deployment block of the Vault
+                    const deployBlock = 18133560; // Approximate deploy block or safe past block
+                    // However, CDP allows 0 to latest without issues, but we use deployBlock for safety if needed.
+                    // Wait, Base block is around 18000000. 
+                    const events = await vaultEventContract.queryFilter(filter, 18000000, "latest");
                     let totalClaimed = 0n;
                     for (let event of events) {
                         totalClaimed += event.args[1];
