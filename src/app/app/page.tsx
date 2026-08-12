@@ -35,7 +35,8 @@ const VAULT_ABI = [
 export default function VaultDashboard() {
   const [globalUserAddress, setGlobalUserAddress] = useState<string | null>(null);
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
-  const [coinbaseWalletProvider, setCoinbaseWalletProvider] = useState<unknown>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [coinbaseWalletProvider, setCoinbaseWalletProvider] = useState<any>(null);
   const [showTosModal, setShowTosModal] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
   
@@ -77,9 +78,12 @@ export default function VaultDashboard() {
 
   const executeWalletConnection = async () => {
       try {
-          let cbProvider;
-          if (typeof window !== 'undefined' && (window as unknown as { ethereum: unknown }).ethereum !== undefined) {
-              cbProvider = (window as unknown as { ethereum: unknown }).ethereum;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          let cbProvider: any;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          if (typeof window !== 'undefined' && (window as any).ethereum !== undefined) {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              cbProvider = (window as any).ethereum;
           } else {
               const sdk = new CoinbaseWalletSDK({
                   appName: 'BaseNation',
