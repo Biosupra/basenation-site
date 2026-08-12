@@ -185,7 +185,8 @@
             "function withdrawPosition(uint256 tokenId) external",
             "function positionOwner(uint256 tokenId) external view returns (address)",
             "function getUserPositions(address user) external view returns (uint256[])",
-            "function depositAndStake(uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)"
+            "function depositAndStake(uint256 amount0ToAdd, uint256 amount1ToAdd, uint256 amount0Min, uint256 amount1Min, int24 tickSpacing, int24 tickLower, int24 tickUpper) external returns (uint256)",
+            "event RewardsClaimed(address indexed user, uint256 userReward, uint256 protocolFee)"
         ];
 
         let userSigner = null;
@@ -348,12 +349,50 @@
                     return;
                 }
                 
-                // MOCK LIVE TICKER FOR BETA DEMO
-                let currentEarned = 0.00;
-                setInterval(() => {
-                    currentEarned += (Math.random() * 0.001);
-                    document.getElementById('stat-unclaimed').innerText = currentEarned.toFixed(4);
-                }, 3000);
+                // FETCH APY FROM THE GRAPH
+                try {
+                    const query = { query: `{ gauges(where: {id: "0xa0b61fdb9f1fb9b917fe38b49427fd4d87472d28"}) { apy } }` };
+                    const response = await fetch("https://api.studio.thegraph.com/query/50802/aerodrome-base-mainnet/version/latest", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify(query)
+                    });
+                    const result = await response.json();
+                    if (result.data && result.data.gauges && result.data.gauges.length > 0) {
+                        const apy = parseFloat(result.data.gauges[0].apy);
+                        if (apy > 0) { document.getElementById('stat-apy').innerText = apy.toFixed(2) + "%"; }
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch APY", e);
+                }
+
+                // FETCH LIFETIME EARNED
+                try {
+                    const filter = vaultContract.filters.RewardsClaimed(globalUserAddress);
+                    const events = await vaultContract.queryFilter(filter, 0, "latest");
+                    let totalClaimed = 0n;
+                    for (let event of events) {
+                        totalClaimed += event.args[1];
+                    }
+                    document.getElementById('stat-lifetime').innerText = parseFloat(ethers.formatEther(totalClaimed)).toFixed(4);
+                } catch (e) {
+                    console.error("Failed to fetch lifetime rewards", e);
+                }
+
+                // FETCH UNCLAIMED AERO
+                let totalUnclaimed = 0n;
+                const gaugeContract = new ethers.Contract("0xA0B61fdB9f1FB9b917Fe38b49427Fd4D87472D28", ["function earned(address,uint256) external view returns (uint256)"], provider);
+                
+                for (let i = 0; i < positions.length; i++) {
+                    const tokenId = positions[i];
+                    try {
+                        const unclaimed = await gaugeContract.earned(globalUserAddress, tokenId);
+                        totalUnclaimed += unclaimed;
+                    } catch(e) {
+                        console.error("Failed to fetch unclaimed for token " + tokenId, e);
+                    }
+                }
+                document.getElementById('stat-unclaimed').innerText = parseFloat(ethers.formatEther(totalUnclaimed)).toFixed(4);
 
                 container.innerHTML = '';
                 for (let i = 0; i < positions.length; i++) {
