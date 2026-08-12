@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -31,17 +32,17 @@ export default function RootLayout({
         <nav className="dropdown">
           <button className="dropbtn">Menu</button>
           <div className="dropdown-content">
-            <a href="/">Home Page</a>
-            <a href="/mission">Our Mission</a>
-            <a href="/whitepages">Whitepages</a>
-            <a href="/tos">Terms of Service</a>
+            <Link href="/">Home Page</Link>
+            <Link href="/mission">Our Mission</Link>
+            <Link href="/whitepages">Whitepages</Link>
+            <Link href="/tos">Terms of Service</Link>
           </div>
         </nav>
 
         <nav className="user-dropdown dropdown">
           <button className="dropbtn" style={{ backgroundColor: "var(--aero-red)" }}>User Dashboard</button>
           <div className="dropdown-content">
-            <a href="/app" style={{ color: "var(--text-muted)", cursor: "pointer" }}>Vault Access</a>
+            <Link href="/app" style={{ color: "var(--text-muted)", cursor: "pointer" }}>Vault Access</Link>
           </div>
         </nav>
 

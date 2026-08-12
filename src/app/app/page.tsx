@@ -35,7 +35,7 @@ const VAULT_ABI = [
 export default function VaultDashboard() {
   const [globalUserAddress, setGlobalUserAddress] = useState<string | null>(null);
   const [provider, setProvider] = useState<BrowserProvider | null>(null);
-  const [coinbaseWalletProvider, setCoinbaseWalletProvider] = useState<any>(null);
+  const [coinbaseWalletProvider, setCoinbaseWalletProvider] = useState<unknown>(null);
   const [showTosModal, setShowTosModal] = useState(false);
   const [tosAccepted, setTosAccepted] = useState(false);
   
@@ -56,6 +56,7 @@ export default function VaultDashboard() {
 
   useEffect(() => {
       const accepted = localStorage.getItem('tos_accepted') === 'true';
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setTosAccepted(accepted);
   }, []);
 
@@ -77,8 +78,8 @@ export default function VaultDashboard() {
   const executeWalletConnection = async () => {
       try {
           let cbProvider;
-          if (typeof window !== 'undefined' && (window as any).ethereum !== 'undefined') {
-              cbProvider = (window as any).ethereum;
+          if (typeof window !== 'undefined' && (window as unknown as { ethereum: unknown }).ethereum !== undefined) {
+              cbProvider = (window as unknown as { ethereum: unknown }).ethereum;
           } else {
               const sdk = new CoinbaseWalletSDK({
                   appName: 'BaseNation',
@@ -101,6 +102,7 @@ export default function VaultDashboard() {
           setGlobalUserAddress(accounts[0]);
           
           await loadUserPositions(accounts[0], newProvider);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
           alert("Connection failed: " + error.message);
       }
@@ -116,7 +118,7 @@ export default function VaultDashboard() {
           if (userPos.length === 0) {
               setPositions([]);
           } else {
-              setPositions(userPos.map((id: any) => id.toString()));
+              setPositions(userPos.map((id: unknown) => String(id)));
           }
 
           // Fetch APY
@@ -140,13 +142,16 @@ export default function VaultDashboard() {
           try {
               const cdpProvider = new ethers.JsonRpcProvider(PAYMASTER_URL);
               const vaultEventContract = new Contract(VAULT_ADDRESS, VAULT_ABI, cdpProvider);
-              const filter = vaultEventContract.filters.RewardsClaimed(userAddress);
-              const events = await vaultEventContract.queryFilter(filter, 18000000, "latest");
+              const checksumAddress = ethers.getAddress(userAddress);
+              const filter = vaultEventContract.filters.RewardsClaimed(checksumAddress);
+              const latestBlock = await cdpProvider.getBlockNumber();
+              const events = await vaultEventContract.queryFilter(filter, 18000000, latestBlock);
               let totalClaimed = BigInt(0);
-              for (let event of events) {
+              for (const event of events) {
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
                   totalClaimed += (event as any).args[1];
               }
-              setStats(prev => ({ ...prev, lifetime: parseFloat(formatEther(totalClaimed)).toFixed(4) }));
+              setStats(prev => ({ ...prev, lifetime: parseFloat(formatEther(totalClaimed)).toFixed(6) }));
           } catch (e) {
               console.error("Failed to fetch lifetime", e);
           }
@@ -165,7 +170,7 @@ export default function VaultDashboard() {
                   console.error("Failed to fetch unclaimed for " + tokenId, e);
               }
           }
-          setStats(prev => ({ ...prev, unclaimed: parseFloat(formatEther(totalUnclaimed)).toFixed(4) }));
+          setStats(prev => ({ ...prev, unclaimed: parseFloat(formatEther(totalUnclaimed)).toFixed(6) }));
 
       } catch (error) {
           console.error(error);
@@ -175,7 +180,9 @@ export default function VaultDashboard() {
       }
   };
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sendSponsoredTx = async (calls: any[], message: string) => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const capabilities: any = {};
       if (PAYMASTER_URL) {
           capabilities.paymasterService = { url: PAYMASTER_URL };
@@ -222,6 +229,7 @@ export default function VaultDashboard() {
               return false;
           }
           return true; 
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
           setManageError({ title: "LEDGER READ ERROR", message: error.message });
           return false;
@@ -251,8 +259,8 @@ export default function VaultDashboard() {
           const wethWei = parseUnits(wethTokens.toFixed(18), 18);
           const usdcMwei = parseUnits(usdcTokens.toFixed(6), 6);
 
-          let tickLower = currentTick - (currentTick % 50) - 150;
-          let tickUpper = currentTick - (currentTick % 50) + 150;
+          const tickLower = currentTick - (currentTick % 50) - 150;
+          const tickUpper = currentTick - (currentTick % 50) + 150;
 
           setManageError({ message: "Step 2: Preparing batch transaction (Approve + Deposit)..." });
 
@@ -284,7 +292,9 @@ export default function VaultDashboard() {
           setManageError({ message: "Deposit successful! Hash: " + txHash + "\nLoading your new position..." });
           setWethUsd("");
           setUsdcUsd("");
+          await new Promise(r => setTimeout(r, 3000));
           await loadUserPositions(globalUserAddress, provider);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
           console.error(error);
           setManageError({ title: "DEPOSIT FAILED", message: error.reason || error.shortMessage || error.message });
@@ -312,7 +322,9 @@ export default function VaultDashboard() {
           const txHash = await sendSponsoredTx(calls, "Claiming rewards...");
           
           setManageError({ message: "AERO Rewards successfully claimed! Hash: " + txHash });
+          await new Promise(r => setTimeout(r, 3000));
           await loadUserPositions(globalUserAddress, provider);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
           setManageError({ title: "CLAIM FAILED", message: error.reason || error.shortMessage || error.message });
       } finally {
@@ -339,7 +351,9 @@ export default function VaultDashboard() {
           const txHash = await sendSponsoredTx(calls, "Withdrawing position...");
           
           setManageError({ message: "Position Withdrawn! The NFT is back in your wallet. Hash: " + txHash });
+          await new Promise(r => setTimeout(r, 3000));
           await loadUserPositions(globalUserAddress, provider);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
           setManageError({ title: "WITHDRAW FAILED", message: error.reason || error.shortMessage || error.message });
       } finally {
