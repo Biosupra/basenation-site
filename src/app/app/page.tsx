@@ -281,7 +281,7 @@ export default function VaultDashboard() {
       if (!globalUserAddress || !provider) return alert("Connect wallet first.");
       const wEthVal = parseFloat(wethUsd) || 0;
       const usdcVal = parseFloat(usdcUsd) || 0;
-      if (wEthVal <= 0 && usdcVal <= 0) return alert("Enter a valid USD amount in at least one box.");
+      if (wEthVal <= 0 || usdcVal <= 0) return alert("This vault strategy requires both WETH and USDC. Please enter a valid USD amount in both boxes.");
 
       setIsDepositing(true);
       setManageError({ message: "Step 1: Calculating WETH/USDC amounts from live price..." });
