@@ -197,32 +197,64 @@ export default function VaultDashboard() {
           capabilities.paymasterService = { url: PAYMASTER_URL };
       }
       
-      setManageError({ message: "Confirm transaction in your wallet (Gas Sponsored!)..." });
-      
-      const bundleId = await coinbaseWalletProvider.request({
-          method: 'wallet_sendCalls',
-          params: [{
-              version: '1.0',
-              chainId: BASE_CHAIN_HEX,
-              from: globalUserAddress,
-              calls: calls,
-              capabilities: capabilities
-          }]
-      });
-      
-      setManageError({ message: "Transaction submitted! Waiting for network confirmation..." });
-      
-      while (true) {
-          await new Promise(r => setTimeout(r, 2000));
-          const status = await coinbaseWalletProvider.request({
-              method: 'wallet_getCallsStatus',
-              params: [bundleId]
+      try {
+          setManageError({ message: "Confirm transaction in your wallet (Gas Sponsored!)..." });
+          const bundleId = await coinbaseWalletProvider.request({
+              method: 'wallet_sendCalls',
+              params: [{
+                  version: '1.0',
+                  chainId: BASE_CHAIN_HEX,
+                  from: globalUserAddress,
+                  calls: calls,
+                  capabilities: capabilities
+              }]
           });
-          if (status.status === 'CONFIRMED') {
-              return status.receipts[0].transactionHash;
-          } else if (status.status === 'FAILED') {
-              throw new Error("Transaction failed on-chain.");
+          
+          setManageError({ message: "Transaction submitted! Waiting for network confirmation..." });
+          
+          while (true) {
+              await new Promise(r => setTimeout(r, 2000));
+              const status = await coinbaseWalletProvider.request({
+                  method: 'wallet_getCallsStatus',
+                  params: [bundleId]
+              });
+              if (status.status === 'CONFIRMED') {
+                  return status.receipts[0].transactionHash;
+              } else if (status.status === 'FAILED') {
+                  throw new Error("Transaction failed on-chain.");
+              }
           }
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+          // If the wallet does not support wallet_sendCalls, fall back to standard sequential execution
+          const errMsg = (error.message || "").toLowerCase();
+          if (errMsg.includes('not supported') || errMsg.includes("doesn't has corresponding handler") || errMsg.includes('unrecognized') || errMsg.includes('unsupported') || error.code === -32601) {
+              console.log("Wallet does not support wallet_sendCalls, falling back to standard execution");
+              if (!provider) throw new Error("Provider not found for standard execution.");
+              
+              const signer = await provider.getSigner();
+              let lastTxHash = "";
+              
+              for (let i = 0; i < calls.length; i++) {
+                  const call = calls[i];
+                  setManageError({ message: `Please confirm transaction ${i + 1} of ${calls.length} in your wallet (Standard Gas)...` });
+                  
+                  const tx = await signer.sendTransaction({
+                      to: call.to,
+                      data: call.data,
+                      value: call.value || 0
+                  });
+                  
+                  setManageError({ message: `Waiting for confirmation of transaction ${i + 1}...` });
+                  await tx.wait();
+                  lastTxHash = tx.hash;
+              }
+              
+              return lastTxHash;
+          }
+          
+          // Re-throw if it's a different error (e.g. user rejected)
+          throw error;
       }
   };
 
