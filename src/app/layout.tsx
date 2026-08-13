@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import VaultButton from "@/components/VaultButton";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -42,7 +43,7 @@ export default function RootLayout({
         <nav className="user-dropdown dropdown">
           <button className="dropbtn" style={{ backgroundColor: "var(--aero-red)" }}>User Dashboard</button>
           <div className="dropdown-content">
-            <Link href="/app" style={{ color: "var(--text-muted)", cursor: "pointer" }}>Vault Access</Link>
+            <VaultButton />
           </div>
         </nav>
 
