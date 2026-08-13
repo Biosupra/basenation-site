@@ -247,6 +247,11 @@ export default function VaultDashboard() {
                   
                   setManageError({ message: `Waiting for confirmation of transaction ${i + 1}...` });
                   await tx.wait();
+                  // Add delay for RPC read replicas to sync state before estimating gas for next tx
+                  if (i < calls.length - 1) {
+                      setManageError({ message: `Syncing network state...` });
+                      await new Promise(r => setTimeout(r, 3000));
+                  }
                   lastTxHash = tx.hash;
               }
               
@@ -303,9 +308,29 @@ export default function VaultDashboard() {
           const tickLower = currentTick - (currentTick % 50) - 150;
           const tickUpper = currentTick - (currentTick % 50) + 150;
 
-          setManageError({ message: "Step 2: Preparing batch transaction (Approve + Deposit)..." });
-
+          setManageError({ message: "Step 2: Verifying token balances..." });
+          
           const erc20Iface = new Interface(ERC20_ABI);
+          
+          // Verify user has enough balances
+          const wethContract = new Contract(WETH_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
+          const usdcContract = new Contract(USDC_ADDRESS, ["function balanceOf(address) view returns (uint256)"], provider);
+          
+          const wethBal = await wethContract.balanceOf(globalUserAddress);
+          const usdcBal = await usdcContract.balanceOf(globalUserAddress);
+          
+          if (wethWei > BigInt(0) && wethBal < wethWei) {
+              setIsDepositing(false);
+              return setManageError({ title: "INSUFFICIENT BALANCE", message: `You do not have enough WETH. Required: ${ethers.formatEther(wethWei)}, Balance: ${ethers.formatEther(wethBal)}` });
+          }
+          
+          if (usdcMwei > BigInt(0) && usdcBal < usdcMwei) {
+              setIsDepositing(false);
+              return setManageError({ title: "INSUFFICIENT BALANCE", message: `You do not have enough USDC. Required: ${ethers.formatUnits(usdcMwei, 6)}, Balance: ${ethers.formatUnits(usdcBal, 6)}` });
+          }
+
+          setManageError({ message: "Step 3: Preparing batch transaction (Approve + Deposit)..." });
+
           const vaultIface = new Interface(VAULT_ABI);
 
           const calls = [];

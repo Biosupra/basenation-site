@@ -21,8 +21,8 @@ async function main() {
     const tickSpacing = Number(await poolContract.tickSpacing());
     console.log("Pool Tick Spacing:", tickSpacing);
     
-    const wEthVal = 0;
-    const usdcVal = 5;
+    const wEthVal = 2.5;
+    const usdcVal = 2.5;
     
     const ratio = Math.pow(1.0001, currentTick);
     const wethPriceUsd = ratio * Math.pow(10, 12); 
